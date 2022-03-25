@@ -1,0 +1,2 @@
+# DangerMine
+Jogo em primeira pessoa, onde o jogador possui duas ferramentas: uma arma e uma picareta. Com a arma ele mira e abate os inimigos que vêm em sua direção, e com a picareta ele minera rochas pelo cenário.  O jogador inicia o jogo com 3 vidas e zero pontos. A cada rocha mineirada, ele ganha um ponto, e a cada inimigo que o toca, ele perde uma vida. O jogo termina com a derrota do jogador ao acabarem as suas vidas ou com sua vitória ao derrotar todos os inimigos.
