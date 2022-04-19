@@ -7,7 +7,6 @@
 //
 //                   TRABALHO PRÁTICO
 //            Artur Rossi e Marthyna Weber
-//
 
 #include <cmath>
 #include <cstdio>
@@ -1179,6 +1178,30 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         LoadShadersFromFiles();
         fprintf(stdout,"Shaders recarregados!\n");
         fflush(stdout);
+    }
+
+     // Se o usuário apertar a tecla 'W', movimentar a câmera para FRENTE (em relação ao sistema de coordenadas da câmera);
+    if (key == GLFW_KEY_W && action == GLFW_PRESS)
+    {
+        g_CameraDistance -= 0.1f;
+    }
+
+    // Se o usuário apertar a tecla 'S', movimentar a câmera para TRÁS (em relação ao sistema de coordenadas da câmera);
+    if (key == GLFW_KEY_S && action == GLFW_PRESS)
+    {
+        g_CameraDistance += 0.1f;
+    }
+
+    // Se o usuário apertar a tecla 'D', movimentar a câmera para DIREITA (em relação ao sistema de coordenadas da câmera);
+    if (key == GLFW_KEY_D && action == GLFW_PRESS)
+    {
+        g_CameraTheta += 0.1f;
+    }
+
+    // Se o usuário apertar a tecla 'A', movimentar a câmera para ESQUERDA (em relação ao sistema de coordenadas da câmera);
+    if (key == GLFW_KEY_A && action == GLFW_PRESS)
+    {
+        g_CameraTheta -= 0.1f;
     }
 }
 
