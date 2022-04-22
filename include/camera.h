@@ -16,17 +16,15 @@ class Camera
 private:
     GLuint program_id;
 
-    float g_CameraTheta;
-    float g_CameraPhi;
-
-    float r;
+public:
     float y;
     float z;
     float x;
 
-public:
     float g_CameraDistance;
-    bool firstClick = true;
+
+    float g_CameraTheta;
+    float g_CameraPhi;
 
     glm::vec4 center_point;
     glm::vec4 lookat_point;

@@ -242,8 +242,8 @@ int main(int argc, char *argv[])
 #define GUN_ANGLE_X 0.39
 
         // Desenhamos a arma
-        model = Matrix_Scale(0.2f, 0.2f, 0.2f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
-        // * Matrix_Translate(x, y, z);
+        glm::mat4 inverse = glm::inverse(camera.view);
+        model = inverse * Matrix_Translate(0.0f, 0.0f, -1.0f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X); // * Matrix_Translate(x, y, z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, GUN);
         DrawVirtualObject("gun");
