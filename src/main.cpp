@@ -152,8 +152,9 @@ int main(int argc, char *argv[])
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+    // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     GLFWwindow *window;
-    window = glfwCreateWindow(800, 600, "INF01047 - 318166 - Marthyna Luiza Weber", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "INF01047 - TRABALHO PRATICO - Artur Rossi e Marthyna Weber", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -167,33 +168,21 @@ int main(int argc, char *argv[])
     glfwSetScrollCallback(window, ScrollCallback);
 
     glfwMakeContextCurrent(window);
-
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
     FramebufferSizeCallback(window, 800, 600);
-    const GLubyte *vendor = glGetString(GL_VENDOR);
-    const GLubyte *renderer = glGetString(GL_RENDERER);
-    const GLubyte *glversion = glGetString(GL_VERSION);
-    const GLubyte *glslversion = glGetString(GL_SHADING_LANGUAGE_VERSION);
-
-    printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 
     LoadShadersFromFiles();
 
-    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");
-    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif");
-    ObjModel spheremodel("../../data/sphere.obj");
-    ComputeNormals(&spheremodel);
-    BuildTrianglesAndAddToVirtualScene(&spheremodel);
+    // Carregamos duas imagens para serem utilizadas como textura
+    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
+    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
 
-    ObjModel bunnymodel("../../data/bunny.obj");
-    ComputeNormals(&bunnymodel);
-    BuildTrianglesAndAddToVirtualScene(&bunnymodel);
-
-    ObjModel planemodel("../../data/plane.obj");
-    ComputeNormals(&planemodel);
-    BuildTrianglesAndAddToVirtualScene(&planemodel);
+    // Construímos a representação de objetos geométricos através de malhas de triângulos
+    ObjModel gunmodel("../../data/gun.obj");
+    ComputeNormals(&gunmodel);
+    BuildTrianglesAndAddToVirtualScene(&gunmodel);
 
     if (argc > 1)
     {
@@ -247,34 +236,27 @@ int main(int argc, char *argv[])
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
 
-        model = Matrix_Translate(-1.0f, 0.0f, 0.0f) * Matrix_Rotate_Z(0.6f) * Matrix_Rotate_X(0.2f) * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.1f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, SPHERE);
-        DrawVirtualObject("sphere");
+#define GUN 0
+#define GUN_ANGLE_Z -0.2f
+#define GUN_ANGLE_Y -0.98f
+#define GUN_ANGLE_X 0.39
 
-        model = Matrix_Translate(1.0f, 0.0f, 0.0f) * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
+        // Desenhamos a arma
+        model = Matrix_Scale(0.2f, 0.2f, 0.2f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
+        // * Matrix_Translate(x, y, z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BUNNY);
-        DrawVirtualObject("bunny");
-
-        model = Matrix_Translate(0.0f, -1.1f, 0.0f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, PLANE);
-        DrawVirtualObject("plane");
+        glUniform1i(object_id_uniform, GUN);
+        DrawVirtualObject("gun");
 
         TextRendering_ShowEulerAngles(window);
-
         TextRendering_ShowProjection(window);
-
         TextRendering_ShowFramesPerSecond(window);
 
         glfwSwapBuffers(window);
-
         glfwPollEvents();
     }
 
     glfwTerminate();
-
     return 0;
 }
 
@@ -563,29 +545,23 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel *model)
 
     GLuint indices_id;
     glGenBuffers(1, &indices_id);
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(GLuint), indices.data());
-
     glBindVertexArray(0);
 }
 
 GLuint LoadShader_Vertex(const char *filename)
 {
     GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
-
     LoadShader(filename, vertex_shader_id);
-
     return vertex_shader_id;
 }
 
 GLuint LoadShader_Fragment(const char *filename)
 {
     GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
-
     LoadShader(filename, fragment_shader_id);
-
     return fragment_shader_id;
 }
 
@@ -607,17 +583,12 @@ void LoadShader(const char *filename, GLuint shader_id)
     std::string str = shader.str();
     const GLchar *shader_string = str.c_str();
     const GLint shader_string_length = static_cast<GLint>(str.length());
-
     glShaderSource(shader_id, 1, &shader_string, &shader_string_length);
-
     glCompileShader(shader_id);
-
     GLint compiled_ok;
     glGetShaderiv(shader_id, GL_COMPILE_STATUS, &compiled_ok);
-
     GLint log_length = 0;
     glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &log_length);
-
     GLchar *log = new GLchar[log_length];
     glGetShaderInfoLog(shader_id, log_length, &log_length, log);
 
@@ -646,19 +617,15 @@ void LoadShader(const char *filename, GLuint shader_id)
 
         fprintf(stderr, "%s", output.c_str());
     }
-
     delete[] log;
 }
 
 GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
 {
     GLuint program_id = glCreateProgram();
-
     glAttachShader(program_id, vertex_shader_id);
     glAttachShader(program_id, fragment_shader_id);
-
     glLinkProgram(program_id);
-
     GLint linked_ok = GL_FALSE;
     glGetProgramiv(program_id, GL_LINK_STATUS, &linked_ok);
 
@@ -666,13 +633,9 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
     {
         GLint log_length = 0;
         glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &log_length);
-
         GLchar *log = new GLchar[log_length];
-
         glGetProgramInfoLog(program_id, log_length, &log_length, log);
-
         std::string output;
-
         output += "ERROR: OpenGL linking of program failed.\n";
         output += "== Start of link log\n";
         output += log;
@@ -688,14 +651,6 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
 
     return program_id;
 }
-
-void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-
-    g_ScreenRatio = (float)width / height;
-}
-
 double g_LastCursorPosX, g_LastCursorPosY;
 
 void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
@@ -943,6 +898,24 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow *window)
     float charwidth = TextRendering_CharWidth(window);
 
     TextRendering_PrintString(window, buffer, 1.0f - (numchars + 1) * charwidth, 1.0f - lineheight, 1.0f);
+}
+
+void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
+{
+    // Indicamos que queremos renderizar em toda região do framebuffer. A
+    // função "glViewport" define o mapeamento das "normalized device
+    // coordinates" (NDC) para "pixel coordinates".  Essa é a operação de
+    // "Screen Mapping" ou "Viewport Mapping" vista em aula ({+ViewportMapping2+}).
+    glViewport(0, 0, width, height);
+
+    // Atualizamos também a razão que define a proporção da janela (largura /
+    // altura), a qual será utilizada na definição das matrizes de projeção,
+    // tal que não ocorra distorções durante o processo de "Screen Mapping"
+    // acima, quando NDC é mapeado para coordenadas de pixels. Veja slides 205-215 do documento Aula_09_Projecoes.pdf.
+    //
+    // O cast para float é necessário pois números inteiros são arredondados ao
+    // serem divididos!
+    g_ScreenRatio = (float)width / height;
 }
 
 void PrintObjModelInfo(ObjModel *model)
