@@ -23,11 +23,11 @@ void Camera::update()
 
 void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset)
 {
-    g_CameraDistance -= 0.1f * (*mouseYOffset);
+    // g_CameraDistance -= 0.1f * (*mouseYOffset);
 
-    const float verysmallnumber = std::numeric_limits<float>::epsilon();
-    if (g_CameraDistance < verysmallnumber)
-        g_CameraDistance = verysmallnumber;
+    // const float verysmallnumber = std::numeric_limits<float>::epsilon();
+    // if (g_CameraDistance < verysmallnumber)
+    //     g_CameraDistance = verysmallnumber;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
@@ -52,43 +52,47 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
         glm::vec4 w = -view_vector / norm(view_vector);
         center_point -= 0.01f * (crossproduct(up_vector, w));
     }
+    // else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+    // {
+    //     // Unhides cursor since camera is not looking around anymore
+    //     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    //     // Makes sure the next time the camera looks around it doesn't jump
+    //     firstClick = true;
+    // }
 
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-    {
-        double mouseX, mouseY;
+    // if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    // {
 
-        glfwGetCursorPos(window, &mouseX, &mouseY);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-        float dx = *mouseXPos - mouseX;
-        float dy = *mouseYPos - mouseY;
+    double mouseX, mouseY;
 
-        g_CameraTheta += 0.01f * dx;
-        g_CameraPhi -= 0.01f * dy;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
 
-        float phimax = 3.141592f / 2;
-        float phimin = -phimax;
+    float dx = *mouseXPos - mouseX;
+    float dy = *mouseYPos - mouseY;
 
-        if (g_CameraPhi > phimax)
-            g_CameraPhi = phimax;
+    g_CameraTheta += 0.01f * dx;
+    g_CameraPhi += 0.01f * dy;
 
-        if (g_CameraPhi < phimin)
-            g_CameraPhi = phimin;
+    float phimax = 3.141592f / 2;
+    float phimin = -phimax;
 
-        mouseX = *mouseXPos;
-        mouseY = *mouseYPos;
+    if (g_CameraPhi > phimax)
+        g_CameraPhi = phimax;
 
-        y = g_CameraDistance * sin(g_CameraPhi);
-        z = g_CameraDistance * cos(g_CameraPhi) * cos(g_CameraTheta);
-        x = g_CameraDistance * cos(g_CameraPhi) * sin(g_CameraTheta);
+    if (g_CameraPhi < phimin)
+        g_CameraPhi = phimin;
 
-        lookat_point = glm::vec4(x, y, z - 1.0f, 1.0f);
-        view_vector = lookat_point - center_point;
-    }
-    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
-    {
-        // Unhides cursor since camera is not looking around anymore
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        // Makes sure the next time the camera looks around it doesn't jump
-        firstClick = true;
-    }
+    mouseX = *mouseXPos;
+    mouseY = *mouseYPos;
+
+    y = g_CameraDistance * sin(g_CameraPhi);
+    z = g_CameraDistance * cos(g_CameraPhi) * cos(g_CameraTheta);
+    x = g_CameraDistance * cos(g_CameraPhi) * sin(g_CameraTheta);
+
+    lookat_point = glm::vec4(x, y, z - 1.0f, 1.0f);
+    view_vector = lookat_point - center_point;
+
+    // }
 }
