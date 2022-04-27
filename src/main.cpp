@@ -1,7 +1,11 @@
-
-#define SPHERE 0
-#define BUNNY 1
+#define GUN 0
+#define AIM 1
 #define PLANE 2
+#define GUN_ANGLE_Z -0.2f
+#define GUN_ANGLE_Y -1.3f
+#define GUN_ANGLE_X 0.39
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
 
 #include <cmath>
 #include <cstdio>
@@ -25,6 +29,7 @@
 #include "utils.h"
 #include "matrices.h"
 #include "camera.h"
+
 struct ObjModel
 {
     tinyobj::attrib_t attrib;
@@ -48,41 +53,6 @@ struct ObjModel
     }
 };
 
-void PushMatrix(glm::mat4 M);
-void PopMatrix(glm::mat4 &M);
-
-void BuildTrianglesAndAddToVirtualScene(ObjModel *);
-void ComputeNormals(ObjModel *model);
-void LoadShadersFromFiles();
-void LoadTextureImage(const char *filename);
-void DrawVirtualObject(const char *object_name);
-GLuint LoadShader_Vertex(const char *filename);
-GLuint LoadShader_Fragment(const char *filename);
-void LoadShader(const char *filename, GLuint shader_id);
-GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id);
-
-void PrintObjModelInfo(ObjModel *);
-void TextRendering_Init();
-float TextRendering_LineHeight(GLFWwindow *window);
-float TextRendering_CharWidth(GLFWwindow *window);
-void TextRendering_PrintString(GLFWwindow *window, const std::string &str, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrix(GLFWwindow *window, glm::mat4 M, float x, float y, float scale = 1.0f);
-void TextRendering_PrintVector(GLFWwindow *window, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProduct(GLFWwindow *window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow *window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow *window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_ShowModelViewProjection(GLFWwindow *window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
-void TextRendering_ShowEulerAngles(GLFWwindow *window);
-void TextRendering_ShowProjection(GLFWwindow *window);
-void TextRendering_ShowFramesPerSecond(GLFWwindow *window);
-
-void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
-void ErrorCallback(int error, const char *description);
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
-void CursorPosCallback(GLFWwindow *window, double xpos, double ypos);
-void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
-
 struct SceneObject
 {
     std::string name;
@@ -94,8 +64,35 @@ struct SceneObject
     glm::vec3 bbox_max;
 };
 
-std::map<std::string, SceneObject> g_VirtualScene;
+void PushMatrix(glm::mat4 M);
+void PopMatrix(glm::mat4 &M);
 
+void DrawVirtualObject(const char *object_name);
+void BuildTrianglesAndAddToVirtualScene(ObjModel *);
+void ComputeNormals(ObjModel *model);
+
+void LoadShadersFromFiles();
+void LoadTextureImage(const char *filename);
+void LoadShader(const char *filename, GLuint shader_id);
+void TextRendering_Init();
+void TextRendering_PrintString(GLFWwindow *window, const std::string &str, float x, float y, float scale = 1.0f);
+void TextRendering_ShowFramesPerSecond(GLFWwindow *window);
+
+void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
+void ErrorCallback(int error, const char *description);
+void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
+void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
+void CursorPosCallback(GLFWwindow *window, double xpos, double ypos);
+void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
+
+float TextRendering_LineHeight(GLFWwindow *window);
+float TextRendering_CharWidth(GLFWwindow *window);
+
+GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id);
+GLuint LoadShader_Vertex(const char *filename);
+GLuint LoadShader_Fragment(const char *filename);
+
+std::map<std::string, SceneObject> g_VirtualScene;
 std::stack<glm::mat4> g_MatrixStack;
 
 float g_ScreenRatio = 1.0f;
@@ -108,16 +105,10 @@ bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false;
 bool g_MiddleMouseButtonPressed = false;
 
-float g_ForearmAngleZ = 0.0f;
-float g_ForearmAngleX = 0.0f;
-
-float g_TorsoPositionX = 0.0f;
-float g_TorsoPositionY = 0.0f;
-
 double mouseXPos, mouseYPos, mouseXOffset, mouseYOffset;
+double g_LastCursorPosX, g_LastCursorPosY;
 
 bool g_UsePerspectiveProjection = true;
-
 bool g_ShowInfoText = true;
 
 GLuint vertex_shader_id;
@@ -131,8 +122,7 @@ GLint bbox_min_uniform;
 GLint bbox_max_uniform;
 
 GLuint g_NumLoadedTextures = 0;
-
-int main(int argc, char *argv[])
+int main()
 {
     int success = glfwInit();
     if (!success)
@@ -142,19 +132,18 @@ int main(int argc, char *argv[])
     }
 
     glfwSetErrorCallback(ErrorCallback);
-
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+    #ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     GLFWwindow *window;
-    window = glfwCreateWindow(800, 600, "INF01047 - TRABALHO PRATICO - Artur Rossi e Marthyna Weber", NULL, NULL);
+    window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_WIDTH, "Danger Mine", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -171,45 +160,38 @@ int main(int argc, char *argv[])
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-    FramebufferSizeCallback(window, 800, 600);
+    FramebufferSizeCallback(window, SCREEN_WIDTH, SCREEN_WIDTH);
 
     LoadShadersFromFiles();
 
-    // Carregamos duas imagens para serem utilizadas como textura
-    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
-    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
+    // Carregamos imagens para serem utilizadas como textura
+    LoadTextureImage("../../data/sand.bmp");
+    LoadTextureImage("../../data/metal.jpeg");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel gunmodel("../../data/gun.obj");
     ComputeNormals(&gunmodel);
     BuildTrianglesAndAddToVirtualScene(&gunmodel);
 
-    if (argc > 1)
-    {
-        ObjModel model(argv[1]);
-        BuildTrianglesAndAddToVirtualScene(&model);
-    }
+    ObjModel aimModel("../../data/aim.obj");
+    ComputeNormals(&aimModel);
+    BuildTrianglesAndAddToVirtualScene(&aimModel);
 
-    TextRendering_Init();
+    ObjModel planemodel("../../data/plane.obj");
+    ComputeNormals(&planemodel);
+    BuildTrianglesAndAddToVirtualScene(&planemodel);
 
     glEnable(GL_DEPTH_TEST);
-
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
-
-    glm::mat4 the_projection;
-    glm::mat4 the_model;
 
     Camera camera(program_id);
 
     while (!glfwWindowShouldClose(window))
     {
-
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         glUseProgram(program_id);
 
         glm::mat4 projection;
@@ -236,20 +218,36 @@ int main(int argc, char *argv[])
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
 
-#define GUN 0
-#define GUN_ANGLE_Z -0.2f
-#define GUN_ANGLE_Y -0.98f
-#define GUN_ANGLE_X 0.39
-
-        // Desenhamos a arma
         glm::mat4 inverse = glm::inverse(camera.view);
-        model = inverse * Matrix_Translate(0.0f, 0.0f, -1.0f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X); // * Matrix_Translate(x, y, z);
+        // Desenhamos a arma
+        model = inverse 
+                * Matrix_Translate(0.45f, -0.5f, -0.8f) 
+                * Matrix_Scale(0.08f, 0.08f, 0.08f) 
+                * Matrix_Rotate_Z(GUN_ANGLE_Z) 
+                * Matrix_Rotate_Y(GUN_ANGLE_Y) 
+                * Matrix_Rotate_X(GUN_ANGLE_X);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, GUN);
         DrawVirtualObject("gun");
+        
+        // Desenhamos a mira
+        model = Matrix_Identity();
+        model = inverse * Matrix_Translate(0.0f, 0.0f, -1.0f)  
+                * Matrix_Scale(0.005f, 0.005f, 0.005f) 
+                * Matrix_Rotate_Z(GUN_ANGLE_Z) 
+                * Matrix_Rotate_Y(GUN_ANGLE_Y) 
+                * Matrix_Rotate_X(GUN_ANGLE_X);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, AIM);
+        DrawVirtualObject("aim");
 
-        TextRendering_ShowEulerAngles(window);
-        TextRendering_ShowProjection(window);
+        //Desenhamos o plano
+        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(8.0f, 8.0f, 8.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, PLANE);
+        DrawVirtualObject("plane");
+
+        TextRendering_Init();
         TextRendering_ShowFramesPerSecond(window);
 
         glfwSwapBuffers(window);
@@ -262,12 +260,8 @@ int main(int argc, char *argv[])
 
 void LoadTextureImage(const char *filename)
 {
-    printf("Carregando imagem \"%s\"... ", filename);
-
     stbi_set_flip_vertically_on_load(true);
-    int width;
-    int height;
-    int channels;
+    int width, height, channels;
     unsigned char *data = stbi_load(filename, &width, &height, &channels, 3);
 
     if (data == NULL)
@@ -276,10 +270,7 @@ void LoadTextureImage(const char *filename)
         std::exit(EXIT_FAILURE);
     }
 
-    printf("OK (%dx%d).\n", width, height);
-
-    GLuint texture_id;
-    GLuint sampler_id;
+    GLuint texture_id, sampler_id;
     glGenTextures(1, &texture_id);
     glGenSamplers(1, &sampler_id);
 
@@ -293,7 +284,7 @@ void LoadTextureImage(const char *filename)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
     glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-
+    
     GLuint textureunit = g_NumLoadedTextures;
     glActiveTexture(GL_TEXTURE0 + textureunit);
     glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -302,7 +293,6 @@ void LoadTextureImage(const char *filename)
     glBindSampler(textureunit, sampler_id);
 
     stbi_image_free(data);
-
     g_NumLoadedTextures += 1;
 }
 
@@ -342,9 +332,8 @@ void LoadShadersFromFiles()
     bbox_max_uniform = glGetUniformLocation(program_id, "bbox_max");
 
     glUseProgram(program_id);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(program_id, "sand"), 0);
+    glUniform1i(glGetUniformLocation(program_id, "metal"), 1);
     glUseProgram(0);
 }
 
@@ -429,9 +418,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel *model)
     glBindVertexArray(vertex_array_object_id);
 
     std::vector<GLuint> indices;
-    std::vector<float> model_coefficients;
-    std::vector<float> normal_coefficients;
-    std::vector<float> texture_coefficients;
+    std::vector<float> model_coefficients, normal_coefficients, texture_coefficients;
 
     for (size_t shape = 0; shape < model->shapes.size(); ++shape)
     {
@@ -651,7 +638,6 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
 
     return program_id;
 }
-double g_LastCursorPosX, g_LastCursorPosY;
 
 void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 {
@@ -688,30 +674,6 @@ void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 {
     mouseXPos = xpos;
     mouseYPos = ypos;
-
-    if (g_RightMouseButtonPressed)
-    {
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        g_ForearmAngleZ -= 0.01f * dx;
-        g_ForearmAngleX += 0.01f * dy;
-
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
-
-    if (g_MiddleMouseButtonPressed)
-    {
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        g_TorsoPositionX += 0.01f * dx;
-        g_TorsoPositionY -= 0.01f * dy;
-
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
 }
 
 void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
@@ -753,10 +715,6 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         g_AngleX = 0.0f;
         g_AngleY = 0.0f;
         g_AngleZ = 0.0f;
-        g_ForearmAngleX = 0.0f;
-        g_ForearmAngleZ = 0.0f;
-        g_TorsoPositionX = 0.0f;
-        g_TorsoPositionY = 0.0f;
     }
 
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
@@ -785,89 +743,6 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
 void ErrorCallback(int error, const char *description)
 {
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
-}
-
-void TextRendering_ShowModelViewProjection(
-    GLFWwindow *window,
-    glm::mat4 projection,
-    glm::mat4 view,
-    glm::mat4 model,
-    glm::vec4 p_model)
-{
-    if (!g_ShowInfoText)
-        return;
-
-    glm::vec4 p_world = model * p_model;
-    glm::vec4 p_camera = view * p_world;
-    glm::vec4 p_clip = projection * p_camera;
-    glm::vec4 p_ndc = p_clip / p_clip.w;
-
-    float pad = TextRendering_LineHeight(window);
-
-    TextRendering_PrintString(window, " Model matrix             Model     In World Coords.", -1.0f, 1.0f - pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, model, p_model, -1.0f, 1.0f - 2 * pad, 1.0f);
-
-    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f - 6 * pad, 1.0f);
-    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f - 7 * pad, 1.0f);
-    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f - 8 * pad, 1.0f);
-
-    TextRendering_PrintString(window, " View matrix              World     In Camera Coords.", -1.0f, 1.0f - 9 * pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, view, p_world, -1.0f, 1.0f - 10 * pad, 1.0f);
-
-    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f - 14 * pad, 1.0f);
-    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f - 15 * pad, 1.0f);
-    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f - 16 * pad, 1.0f);
-
-    TextRendering_PrintString(window, " Projection matrix        Camera                    In NDC", -1.0f, 1.0f - 17 * pad, 1.0f);
-    TextRendering_PrintMatrixVectorProductDivW(window, projection, p_camera, -1.0f, 1.0f - 18 * pad, 1.0f);
-
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-
-    glm::vec2 a = glm::vec2(-1, -1);
-    glm::vec2 b = glm::vec2(+1, +1);
-    glm::vec2 p = glm::vec2(0, 0);
-    glm::vec2 q = glm::vec2(width, height);
-
-    glm::mat4 viewport_mapping = Matrix(
-        (q.x - p.x) / (b.x - a.x), 0.0f, 0.0f, (b.x * p.x - a.x * q.x) / (b.x - a.x),
-        0.0f, (q.y - p.y) / (b.y - a.y), 0.0f, (b.y * p.y - a.y * q.y) / (b.y - a.y),
-        0.0f, 0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 1.0f);
-
-    TextRendering_PrintString(window, "                                                       |  ", -1.0f, 1.0f - 22 * pad, 1.0f);
-    TextRendering_PrintString(window, "                            .--------------------------'  ", -1.0f, 1.0f - 23 * pad, 1.0f);
-    TextRendering_PrintString(window, "                            V                           ", -1.0f, 1.0f - 24 * pad, 1.0f);
-
-    TextRendering_PrintString(window, " Viewport matrix           NDC      In Pixel Coords.", -1.0f, 1.0f - 25 * pad, 1.0f);
-    TextRendering_PrintMatrixVectorProductMoreDigits(window, viewport_mapping, p_ndc, -1.0f, 1.0f - 26 * pad, 1.0f);
-}
-
-void TextRendering_ShowEulerAngles(GLFWwindow *window)
-{
-    if (!g_ShowInfoText)
-        return;
-
-    float pad = TextRendering_LineHeight(window);
-
-    char buffer[80];
-    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
-
-    TextRendering_PrintString(window, buffer, -1.0f + pad / 10, -1.0f + 2 * pad / 10, 1.0f);
-}
-
-void TextRendering_ShowProjection(GLFWwindow *window)
-{
-    if (!g_ShowInfoText)
-        return;
-
-    float lineheight = TextRendering_LineHeight(window);
-    float charwidth = TextRendering_CharWidth(window);
-
-    if (g_UsePerspectiveProjection)
-        TextRendering_PrintString(window, "Perspective", 1.0f - 13 * charwidth, -1.0f + 2 * lineheight / 10, 1.0f);
-    else
-        TextRendering_PrintString(window, "Orthographic", 1.0f - 13 * charwidth, -1.0f + 2 * lineheight / 10, 1.0f);
 }
 
 void TextRendering_ShowFramesPerSecond(GLFWwindow *window)
@@ -899,199 +774,8 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow *window)
 
     TextRendering_PrintString(window, buffer, 1.0f - (numchars + 1) * charwidth, 1.0f - lineheight, 1.0f);
 }
-
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
-    // Indicamos que queremos renderizar em toda região do framebuffer. A
-    // função "glViewport" define o mapeamento das "normalized device
-    // coordinates" (NDC) para "pixel coordinates".  Essa é a operação de
-    // "Screen Mapping" ou "Viewport Mapping" vista em aula ({+ViewportMapping2+}).
     glViewport(0, 0, width, height);
-
-    // Atualizamos também a razão que define a proporção da janela (largura /
-    // altura), a qual será utilizada na definição das matrizes de projeção,
-    // tal que não ocorra distorções durante o processo de "Screen Mapping"
-    // acima, quando NDC é mapeado para coordenadas de pixels. Veja slides 205-215 do documento Aula_09_Projecoes.pdf.
-    //
-    // O cast para float é necessário pois números inteiros são arredondados ao
-    // serem divididos!
     g_ScreenRatio = (float)width / height;
-}
-
-void PrintObjModelInfo(ObjModel *model)
-{
-    const tinyobj::attrib_t &attrib = model->attrib;
-    const std::vector<tinyobj::shape_t> &shapes = model->shapes;
-    const std::vector<tinyobj::material_t> &materials = model->materials;
-
-    printf("# of vertices  : %d\n", (int)(attrib.vertices.size() / 3));
-    printf("# of normals   : %d\n", (int)(attrib.normals.size() / 3));
-    printf("# of texcoords : %d\n", (int)(attrib.texcoords.size() / 2));
-    printf("# of shapes    : %d\n", (int)shapes.size());
-    printf("# of materials : %d\n", (int)materials.size());
-
-    for (size_t v = 0; v < attrib.vertices.size() / 3; v++)
-    {
-        printf("  v[%ld] = (%f, %f, %f)\n", static_cast<long>(v),
-               static_cast<const double>(attrib.vertices[3 * v + 0]),
-               static_cast<const double>(attrib.vertices[3 * v + 1]),
-               static_cast<const double>(attrib.vertices[3 * v + 2]));
-    }
-
-    for (size_t v = 0; v < attrib.normals.size() / 3; v++)
-    {
-        printf("  n[%ld] = (%f, %f, %f)\n", static_cast<long>(v),
-               static_cast<const double>(attrib.normals[3 * v + 0]),
-               static_cast<const double>(attrib.normals[3 * v + 1]),
-               static_cast<const double>(attrib.normals[3 * v + 2]));
-    }
-
-    for (size_t v = 0; v < attrib.texcoords.size() / 2; v++)
-    {
-        printf("  uv[%ld] = (%f, %f)\n", static_cast<long>(v),
-               static_cast<const double>(attrib.texcoords[2 * v + 0]),
-               static_cast<const double>(attrib.texcoords[2 * v + 1]));
-    }
-
-    for (size_t i = 0; i < shapes.size(); i++)
-    {
-        printf("shape[%ld].name = %s\n", static_cast<long>(i),
-               shapes[i].name.c_str());
-        printf("Size of shape[%ld].indices: %lu\n", static_cast<long>(i),
-               static_cast<unsigned long>(shapes[i].mesh.indices.size()));
-
-        size_t index_offset = 0;
-
-        assert(shapes[i].mesh.num_face_vertices.size() ==
-               shapes[i].mesh.material_ids.size());
-
-        printf("shape[%ld].num_faces: %lu\n", static_cast<long>(i),
-               static_cast<unsigned long>(shapes[i].mesh.num_face_vertices.size()));
-
-        for (size_t f = 0; f < shapes[i].mesh.num_face_vertices.size(); f++)
-        {
-            size_t fnum = shapes[i].mesh.num_face_vertices[f];
-
-            printf("  face[%ld].fnum = %ld\n", static_cast<long>(f),
-                   static_cast<unsigned long>(fnum));
-
-            for (size_t v = 0; v < fnum; v++)
-            {
-                tinyobj::index_t idx = shapes[i].mesh.indices[index_offset + v];
-                printf("    face[%ld].v[%ld].idx = %d/%d/%d\n", static_cast<long>(f),
-                       static_cast<long>(v), idx.vertex_index, idx.normal_index,
-                       idx.texcoord_index);
-            }
-
-            printf("  face[%ld].material_id = %d\n", static_cast<long>(f),
-                   shapes[i].mesh.material_ids[f]);
-
-            index_offset += fnum;
-        }
-
-        printf("shape[%ld].num_tags: %lu\n", static_cast<long>(i),
-               static_cast<unsigned long>(shapes[i].mesh.tags.size()));
-        for (size_t t = 0; t < shapes[i].mesh.tags.size(); t++)
-        {
-            printf("  tag[%ld] = %s ", static_cast<long>(t),
-                   shapes[i].mesh.tags[t].name.c_str());
-            printf(" ints: [");
-            for (size_t j = 0; j < shapes[i].mesh.tags[t].intValues.size(); ++j)
-            {
-                printf("%ld", static_cast<long>(shapes[i].mesh.tags[t].intValues[j]));
-                if (j < (shapes[i].mesh.tags[t].intValues.size() - 1))
-                {
-                    printf(", ");
-                }
-            }
-            printf("]");
-
-            printf(" floats: [");
-            for (size_t j = 0; j < shapes[i].mesh.tags[t].floatValues.size(); ++j)
-            {
-                printf("%f", static_cast<const double>(
-                                 shapes[i].mesh.tags[t].floatValues[j]));
-                if (j < (shapes[i].mesh.tags[t].floatValues.size() - 1))
-                {
-                    printf(", ");
-                }
-            }
-            printf("]");
-
-            printf(" strings: [");
-            for (size_t j = 0; j < shapes[i].mesh.tags[t].stringValues.size(); ++j)
-            {
-                printf("%s", shapes[i].mesh.tags[t].stringValues[j].c_str());
-                if (j < (shapes[i].mesh.tags[t].stringValues.size() - 1))
-                {
-                    printf(", ");
-                }
-            }
-            printf("]");
-            printf("\n");
-        }
-    }
-
-    for (size_t i = 0; i < materials.size(); i++)
-    {
-        printf("material[%ld].name = %s\n", static_cast<long>(i),
-               materials[i].name.c_str());
-        printf("  material.Ka = (%f, %f ,%f)\n",
-               static_cast<const double>(materials[i].ambient[0]),
-               static_cast<const double>(materials[i].ambient[1]),
-               static_cast<const double>(materials[i].ambient[2]));
-        printf("  material.Kd = (%f, %f ,%f)\n",
-               static_cast<const double>(materials[i].diffuse[0]),
-               static_cast<const double>(materials[i].diffuse[1]),
-               static_cast<const double>(materials[i].diffuse[2]));
-        printf("  material.Ks = (%f, %f ,%f)\n",
-               static_cast<const double>(materials[i].specular[0]),
-               static_cast<const double>(materials[i].specular[1]),
-               static_cast<const double>(materials[i].specular[2]));
-        printf("  material.Tr = (%f, %f ,%f)\n",
-               static_cast<const double>(materials[i].transmittance[0]),
-               static_cast<const double>(materials[i].transmittance[1]),
-               static_cast<const double>(materials[i].transmittance[2]));
-        printf("  material.Ke = (%f, %f ,%f)\n",
-               static_cast<const double>(materials[i].emission[0]),
-               static_cast<const double>(materials[i].emission[1]),
-               static_cast<const double>(materials[i].emission[2]));
-        printf("  material.Ns = %f\n",
-               static_cast<const double>(materials[i].shininess));
-        printf("  material.Ni = %f\n", static_cast<const double>(materials[i].ior));
-        printf("  material.dissolve = %f\n",
-               static_cast<const double>(materials[i].dissolve));
-        printf("  material.illum = %d\n", materials[i].illum);
-        printf("  material.map_Ka = %s\n", materials[i].ambient_texname.c_str());
-        printf("  material.map_Kd = %s\n", materials[i].diffuse_texname.c_str());
-        printf("  material.map_Ks = %s\n", materials[i].specular_texname.c_str());
-        printf("  material.map_Ns = %s\n",
-               materials[i].specular_highlight_texname.c_str());
-        printf("  material.map_bump = %s\n", materials[i].bump_texname.c_str());
-        printf("  material.map_d = %s\n", materials[i].alpha_texname.c_str());
-        printf("  material.disp = %s\n", materials[i].displacement_texname.c_str());
-        printf("  <<PBR>>\n");
-        printf("  material.Pr     = %f\n", materials[i].roughness);
-        printf("  material.Pm     = %f\n", materials[i].metallic);
-        printf("  material.Ps     = %f\n", materials[i].sheen);
-        printf("  material.Pc     = %f\n", materials[i].clearcoat_thickness);
-        printf("  material.Pcr    = %f\n", materials[i].clearcoat_thickness);
-        printf("  material.aniso  = %f\n", materials[i].anisotropy);
-        printf("  material.anisor = %f\n", materials[i].anisotropy_rotation);
-        printf("  material.map_Ke = %s\n", materials[i].emissive_texname.c_str());
-        printf("  material.map_Pr = %s\n", materials[i].roughness_texname.c_str());
-        printf("  material.map_Pm = %s\n", materials[i].metallic_texname.c_str());
-        printf("  material.map_Ps = %s\n", materials[i].sheen_texname.c_str());
-        printf("  material.norm   = %s\n", materials[i].normal_texname.c_str());
-        std::map<std::string, std::string>::const_iterator it(
-            materials[i].unknown_parameter.begin());
-        std::map<std::string, std::string>::const_iterator itEnd(
-            materials[i].unknown_parameter.end());
-
-        for (; it != itEnd; it++)
-        {
-            printf("  material.%s = %s\n", it->first.c_str(), it->second.c_str());
-        }
-        printf("\n");
-    }
 }
