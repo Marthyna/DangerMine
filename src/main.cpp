@@ -255,7 +255,8 @@ int main()
         DrawVirtualObject("plane");
 
         TextRendering_Init();
-        TextRendering_ShowFramesPerSecond(window);
+        TextRendering_ShowLivesCouting(window, g_lives);
+        TextRendering_ShowTotalPoints(window, g_points);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
