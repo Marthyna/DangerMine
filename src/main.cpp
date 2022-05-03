@@ -76,8 +76,7 @@ void LoadTextureImage(const char *filename);
 void LoadShader(const char *filename, GLuint shader_id);
 void TextRendering_Init();
 void TextRendering_PrintString(GLFWwindow *window, const std::string &str, float x, float y, float scale = 1.0f);
-void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives);
-void TextRendering_ShowTotalPoints(GLFWwindow *window, int points);
+void TextRendering_ShowFramesPerSecond(GLFWwindow *window);
 
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
 void ErrorCallback(int error, const char *description);
@@ -110,6 +109,7 @@ double mouseXPos, mouseYPos, mouseXOffset, mouseYOffset;
 double g_LastCursorPosX, g_LastCursorPosY;
 
 bool g_UsePerspectiveProjection = true;
+bool g_ShowInfoText = true;
 
 GLuint vertex_shader_id;
 GLuint fragment_shader_id;
@@ -122,8 +122,6 @@ GLint bbox_min_uniform;
 GLint bbox_max_uniform;
 
 GLuint g_NumLoadedTextures = 0;
-int g_lives = 3;
-int g_points = 0;
 int main()
 {
     int success = glfwInit();
@@ -255,8 +253,7 @@ int main()
         DrawVirtualObject("plane");
 
         TextRendering_Init();
-        TextRendering_ShowLivesCouting(window, g_lives);
-        TextRendering_ShowTotalPoints(window, g_points);
+        TextRendering_ShowFramesPerSecond(window);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -735,6 +732,11 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         g_UsePerspectiveProjection = false;
     }
 
+    if (key == GLFW_KEY_H && action == GLFW_PRESS)
+    {
+        g_ShowInfoText = !g_ShowInfoText;
+    }
+
     if (key == GLFW_KEY_R && action == GLFW_PRESS)
     {
         LoadShadersFromFiles();
@@ -748,32 +750,35 @@ void ErrorCallback(int error, const char *description)
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
-void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives)
+void TextRendering_ShowFramesPerSecond(GLFWwindow *window)
 {
-    static char buffer[20] = "? lives";
-    static int numchars = 8;
+    if (!g_ShowInfoText)
+        return;
 
-    numchars = snprintf(buffer, 20, "%d lives", lives);
+    static float old_seconds = (float)glfwGetTime();
+    static int ellapsed_frames = 0;
+    static char buffer[20] = "?? fps";
+    static int numchars = 7;
+
+    ellapsed_frames += 1;
+
+    float seconds = (float)glfwGetTime();
+
+    float ellapsed_seconds = seconds - old_seconds;
+
+    if (ellapsed_seconds > 1.0f)
+    {
+        numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
+
+        old_seconds = seconds;
+        ellapsed_frames = 0;
+    }
 
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
 
     TextRendering_PrintString(window, buffer, 1.0f - (numchars + 1) * charwidth, 1.0f - lineheight, 1.0f);
 }
-
-void TextRendering_ShowTotalPoints(GLFWwindow *window, int points)
-    {
-    static char buffer[50] = "Total points: ?";
-    static int numchars = 15;
-
-    numchars = snprintf(buffer, 50, "Total points: %d", points);
-
-    float lineheight = TextRendering_LineHeight(window);
-    float charwidth = TextRendering_CharWidth(window);
-
-    TextRendering_PrintString(window, buffer, (numchars + 1) * charwidth, 1.0f - lineheight, 1.0f);
-}
-
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
