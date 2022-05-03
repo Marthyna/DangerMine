@@ -135,9 +135,9 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-    #ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    #endif
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -218,37 +218,23 @@ int main()
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
 
-
-        TextRendering_Init();
-        TextRendering_ShowLivesCouting(window, g_lives);
-        TextRendering_ShowTotalPoints(window, g_points);
-        
         glm::mat4 inverse = glm::inverse(camera.view);
         // Desenhamos a arma
-        model = inverse 
-                * Matrix_Translate(0.45f, -0.5f, -0.8f) 
-                * Matrix_Scale(0.08f, 0.08f, 0.08f) 
-                * Matrix_Rotate_Z(GUN_ANGLE_Z) 
-                * Matrix_Rotate_Y(GUN_ANGLE_Y) 
-                * Matrix_Rotate_X(GUN_ANGLE_X);
+        model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, GUN);
         DrawVirtualObject("gun");
-        
+
         // Desenhamos a mira
         model = Matrix_Identity();
-        model = inverse * Matrix_Translate(0.0f, 0.0f, -1.0f)  
-                * Matrix_Scale(0.005f, 0.005f, 0.005f) 
-                * Matrix_Rotate_Z(GUN_ANGLE_Z) 
-                * Matrix_Rotate_Y(GUN_ANGLE_Y) 
-                * Matrix_Rotate_X(GUN_ANGLE_X);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        model = inverse * Matrix_Translate(0.0f, 0.0f, -1.0f) * Matrix_Scale(0.005f, 0.005f, 0.005f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, AIM);
         DrawVirtualObject("aim");
 
-        //Desenhamos o plano
+        // Desenhamos o plano
         model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(8.0f, 8.0f, 8.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, PLANE);
         DrawVirtualObject("plane");
 
@@ -289,7 +275,7 @@ void LoadTextureImage(const char *filename)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
     glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-    
+
     GLuint textureunit = g_NumLoadedTextures;
     glActiveTexture(GL_TEXTURE0 + textureunit);
     glBindTexture(GL_TEXTURE_2D, texture_id);
