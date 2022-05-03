@@ -1,4 +1,6 @@
 #include "camera.h"
+#include <cstdio>
+#include <cstdlib>
 
 Camera::Camera(GLuint program_id)
 {
@@ -71,6 +73,11 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
 
     float dx = *mouseXPos - mouseX;
     float dy = *mouseYPos - mouseY;
+
+    if (dx == 0 && dy == 0)
+    {
+        return;
+    }
 
     g_CameraTheta += 0.01f * dx;
     g_CameraPhi += 0.01f * dy;
