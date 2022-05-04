@@ -26,6 +26,7 @@ uniform mat4 projection;
 #define SKY 4
 #define BULLET 5
 #define ROCK 6
+#define PICKAXE 7
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -75,7 +76,7 @@ void main()
     float V = 0.0;
     vec3 Kd0;
 
-    if ( object_id == AIM )
+    if ( object_id == AIM || object_id == BULLET )
     {
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
 
@@ -94,27 +95,8 @@ void main()
         float lambert = max(0,dot(n,l));
         color = Kd0 * (lambert + 0.01);
         color = pow(color, vec3(1.0,1.0,1.0)/2.2);
-    } else if ( object_id == BULLET )
-    {
-        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-
-        float raio = 1.0f;
-
-        vec4 p = bbox_center + raio * normalize(position_model - bbox_center);
-        vec4 p_dist = p - bbox_center;
-
-        float theta = atan(p_dist.x, p_dist.z);
-        float phi = asin(p_dist.y/raio);
-
-        U = (theta + M_PI)/(2*M_PI);
-        V = (phi + M_PI_2)/(M_PI);
-
-        Kd0 = texture(metal, vec2(U,V)).rgb;
-        float lambert = max(0,dot(n,l));
-        color = Kd0 * (lambert + 0.01);
-        color = pow(color, vec3(1.0,1.0,1.0)/2.2);
-    }
-    else if ( object_id == GUN )
+    } 
+    else if ( object_id == GUN || object_id == PICKAXE)
     {
         float minx = bbox_min.x;
         float maxx = bbox_max.x;

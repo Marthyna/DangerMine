@@ -5,9 +5,15 @@
 #define SKY 4
 #define BULLET 5
 #define ROCK 6
+#define PICKAXE 7
+
 #define GUN_ANGLE_Z -0.2f
 #define GUN_ANGLE_Y -1.3f
 #define GUN_ANGLE_X 0.39
+#define PICKAXE_ANGLE_X 2.356194
+#define PICKAXE_ANGLE_Y 6.086837
+#define PICKAXE_ANGLE_Z -1.178097
+
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 
@@ -123,6 +129,7 @@ bool g_UsePerspectiveProjection = true;
 GLuint vertex_shader_id;
 GLuint fragment_shader_id;
 GLuint program_id = 0;
+GLuint g_NumLoadedTextures = 0;
 GLint model_uniform;
 GLint view_uniform;
 GLint projection_uniform;
@@ -130,9 +137,9 @@ GLint object_id_uniform;
 GLint bbox_min_uniform;
 GLint bbox_max_uniform;
 
-GLuint g_NumLoadedTextures = 0;
 int g_lives = 3;
 int g_points = 0;
+int g_chosenTool = 0; // 0 = gun, 1 = pickaxe (standart is gun)
 
 int main()
 {
@@ -187,6 +194,10 @@ int main()
     ObjModel gunmodel("../../data/gun.obj");
     ComputeNormals(&gunmodel);
     BuildTrianglesAndAddToVirtualScene(&gunmodel);
+
+    ObjModel pickaxeModel("../../data/pickaxe.obj");
+    ComputeNormals(&pickaxeModel);
+    BuildTrianglesAndAddToVirtualScene(&pickaxeModel);
 
     ObjModel aimModel("../../data/aim.obj");
     ComputeNormals(&aimModel);
@@ -248,13 +259,33 @@ int main()
 
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
-        glm::mat4 inverse = glm::inverse(camera.view);
+        glm::mat4 inverse = glm::inverse(camera.view);        
 
-        // Desenhamos a arma
-        model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, GUN);
-        DrawVirtualObject("gun");
+        if (g_chosenTool == 0)
+        {  
+            // Desenhamos a arma
+            model = inverse 
+                * Matrix_Translate(0.45f, -0.5f, -0.8f) 
+                * Matrix_Scale(0.08f, 0.08f, 0.08f) 
+                * Matrix_Rotate_Z(GUN_ANGLE_X) 
+                * Matrix_Rotate_Y(GUN_ANGLE_Y) 
+                * Matrix_Rotate_X(GUN_ANGLE_Z);
+            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform1i(object_id_uniform, GUN);
+            DrawVirtualObject("gun");
+        } else if (g_chosenTool == 1)
+        {
+            // Desenhamos a picareta
+            model = inverse 
+                * Matrix_Translate(0.45f, -0.5f, -0.8f) 
+                * Matrix_Scale(0.08f, 0.08f, 0.08f) 
+                * Matrix_Rotate_Z(PICKAXE_ANGLE_Z) 
+                * Matrix_Rotate_Y(PICKAXE_ANGLE_Y) 
+                * Matrix_Rotate_X(PICKAXE_ANGLE_X);
+            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform1i(object_id_uniform, PICKAXE);
+            DrawVirtualObject("pickaxe");   
+        }
 
         // Desenhamos a mira
         model = Matrix_Identity();
@@ -282,7 +313,11 @@ int main()
         DrawRocks(model, model_uniform, object_id_uniform);        
 
         // Desenhamos o tiro
-        model = Matrix_Translate(-0.4f, 0.0f, -1.0f) * Matrix_Scale(0.5f, 0.5f, 0.005f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
+        model = Matrix_Translate(-0.4f, 0.0f, -1.0f) 
+            * Matrix_Scale(0.5f, 0.5f, 0.005f) 
+            * Matrix_Rotate_Z(GUN_ANGLE_X) 
+            * Matrix_Rotate_Y(GUN_ANGLE_Y) 
+            * Matrix_Rotate_X(GUN_ANGLE_Z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, BULLET);
         DrawVirtualObject("bullet");
