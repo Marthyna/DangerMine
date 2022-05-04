@@ -23,17 +23,23 @@ void Camera::update()
     glUniformMatrix4fv(glGetUniformLocation(program_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
 };
 
-void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset)
+void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding)
 {
-    // g_CameraDistance -= 0.1f * (*mouseYOffset);
-
-    // const float verysmallnumber = std::numeric_limits<float>::epsilon();
-    // if (g_CameraDistance < verysmallnumber)
-    //     g_CameraDistance = verysmallnumber;
-
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        glm::vec4 w = -view_vector / norm(view_vector);
+        glm::vec4 w;
+        if (isColliding)
+        {
+            glm::vec4 front = glm::vec4(view_vector[0], 0.0f, view_vector[2], 0.0f);
+
+            w = -front / norm(front);
+
+            center_point -= 0.01f * w;
+        }
+        else
+        {
+            w = -view_vector / norm(view_vector);
+        }
         center_point -= 0.01f * w;
     }
 

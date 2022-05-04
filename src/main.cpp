@@ -3,6 +3,7 @@
 #define PLANE 2
 #define LANDSCAPE 3
 #define SKY 4
+#define BULLET 5
 #define GUN_ANGLE_Z -0.2f
 #define GUN_ANGLE_Y -1.3f
 #define GUN_ANGLE_X 0.39
@@ -31,7 +32,7 @@
 #include "utils.h"
 #include "matrices.h"
 #include "camera.h"
-
+#include "collision.h"
 struct ObjModel
 {
     tinyobj::attrib_t attrib;
@@ -54,7 +55,6 @@ struct ObjModel
         printf("OK.\n");
     }
 };
-
 struct SceneObject
 {
     std::string name;
@@ -104,6 +104,8 @@ float g_AngleX = 0.0f;
 float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
 
+glm::vec3 plane_pos = glm::vec3(0.0f, -1.0f, 0.0f);
+
 bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false;
 bool g_MiddleMouseButtonPressed = false;
@@ -126,6 +128,7 @@ GLint bbox_max_uniform;
 GLuint g_NumLoadedTextures = 0;
 int g_lives = 3;
 int g_points = 0;
+
 int main()
 {
     int success = glfwInit();
@@ -195,9 +198,14 @@ int main()
     ComputeNormals(&skyModel);
     BuildTrianglesAndAddToVirtualScene(&skyModel);
 
+    ObjModel bulletModel("../../data/bullet.obj");
+    ComputeNormals(&bulletModel);
+    BuildTrianglesAndAddToVirtualScene(&bulletModel);
+
     glEnable(GL_DEPTH_TEST);
 
     Camera camera(program_id);
+    Collision collision;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -223,7 +231,9 @@ int main()
             projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
         }
 
-        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset);
+        bool isColliding = collision.checkForGroundCollision(camera, plane_pos);
+
+        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding);
         camera.update();
 
         glm::mat4 model = Matrix_Identity();
@@ -243,8 +253,8 @@ int main()
         glUniform1i(object_id_uniform, AIM);
         DrawVirtualObject("aim");
 
-        // Desenhamos o chao
-        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(10.0f, 10.0f, 10.0f);
+        // Desenhamos o plano
+        model = Matrix_Translate(plane_pos[0], plane_pos[1], plane_pos[2]) * Matrix_Scale(10.0f, 10.0f, 10.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, PLANE);
         DrawVirtualObject("plane");
@@ -275,6 +285,12 @@ int main()
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, LANDSCAPE);
         DrawVirtualObject("landscape");
+
+        // Desenhamos o tiro
+        model = Matrix_Translate(-0.4f, 0.0f, -1.0f) * Matrix_Scale(0.5f, 0.5f, 0.005f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, BULLET);
+        DrawVirtualObject("bullet");
 
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);

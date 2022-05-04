@@ -34,7 +34,7 @@ public:
 
     Camera(GLuint program_id);
     void update();
-    void listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset);
+    void listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding);
 };
 
 #endif
