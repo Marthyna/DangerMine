@@ -8,7 +8,7 @@ Camera::Camera(GLuint program_id)
 
     g_CameraTheta = 0.f;
     g_CameraPhi = 0.f;
-    g_CameraDistance = 6.5f;
+    g_CameraDistance = 10.0f;
 
     lookat_point = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     center_point = glm::vec4(0.0f, 0.0f, 2.5f, 1.0f);

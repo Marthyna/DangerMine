@@ -22,6 +22,8 @@ uniform mat4 projection;
 #define GUN 0
 #define AIM 1
 #define PLANE 2
+#define LANDSCAPE 3
+#define SKY 4
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -31,6 +33,8 @@ uniform vec4 bbox_max;
 // Variáveis para acesso das imagens de textura
 uniform sampler2D sand;
 uniform sampler2D metal;
+uniform sampler2D landscape;
+uniform sampler2D sky;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -84,6 +88,9 @@ void main()
         V = (phi + M_PI_2)/(M_PI);
 
         Kd0 = texture(metal, vec2(U,V)).rgb;
+        float lambert = max(0,dot(n,l));
+        color = Kd0 * (lambert + 0.01);
+        color = pow(color, vec3(1.0,1.0,1.0)/2.2);
     }
     else if ( object_id == GUN )
     {
@@ -100,6 +107,9 @@ void main()
         V = (position_model.y - bbox_min.y)/(bbox_max.y - bbox_min.y);
 
         Kd0 = texture(metal, vec2(U,V)).rgb;
+        float lambert = max(0,dot(n,l));
+        color = Kd0 * (lambert + 0.01);
+        color = pow(color, vec3(1.0,1.0,1.0)/2.2);
     }
     else if ( object_id == PLANE )
     {
@@ -107,10 +117,35 @@ void main()
         V = texcoords.y;
 
         Kd0 = texture(sand, vec2(U,V)).rgb;
+        float lambert = max(0,dot(n,l));
+        color = Kd0 * (lambert + 0.01);
+        color = pow(color, vec3(1.0,1.0,1.0)/2.2);
+    }
+    else if ( object_id == LANDSCAPE )
+    {
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        U = (position_model.x - bbox_min.x)/(bbox_max.x - bbox_min.x);
+        V = (position_model.y - bbox_min.y)/(bbox_max.y - bbox_min.y);
+
+        Kd0 = texture(landscape, vec2(U,V)).rgb;
+        color = pow(Kd0, vec3(1.0,1.0,1.0)/2.2);
+    }
+    else if ( object_id == SKY )
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+
+        Kd0 = texture(sky, vec2(U,V)).rgb;
+        color = pow(Kd0, vec3(1.0,1.0,1.0)/2.2);
     }
 
-    float lambert = max(0,dot(n,l));
-    color = Kd0 * (lambert + 0.01);
-    color = pow(color, vec3(1.0,1.0,1.0)/2.2);
 }
 

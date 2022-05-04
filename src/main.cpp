@@ -1,6 +1,8 @@
 #define GUN 0
 #define AIM 1
 #define PLANE 2
+#define LANDSCAPE 3
+#define SKY 4
 #define GUN_ANGLE_Z -0.2f
 #define GUN_ANGLE_Y -1.3f
 #define GUN_ANGLE_X 0.39
@@ -169,6 +171,8 @@ int main()
     // Carregamos imagens para serem utilizadas como textura
     LoadTextureImage("../../data/sand.bmp");
     LoadTextureImage("../../data/metal.jpeg");
+    LoadTextureImage("../../data/landscape.jpeg");
+    LoadTextureImage("../../data/sky.png");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel gunmodel("../../data/gun.obj");
@@ -179,14 +183,19 @@ int main()
     ComputeNormals(&aimModel);
     BuildTrianglesAndAddToVirtualScene(&aimModel);
 
-    ObjModel planemodel("../../data/plane.obj");
-    ComputeNormals(&planemodel);
-    BuildTrianglesAndAddToVirtualScene(&planemodel);
+    ObjModel planeModel("../../data/plane.obj");
+    ComputeNormals(&planeModel);
+    BuildTrianglesAndAddToVirtualScene(&planeModel);
+
+    ObjModel landscapeModel("../../data/landscape.obj");
+    ComputeNormals(&landscapeModel);
+    BuildTrianglesAndAddToVirtualScene(&landscapeModel);
+
+    ObjModel skyModel("../../data/sky.obj");
+    ComputeNormals(&skyModel);
+    BuildTrianglesAndAddToVirtualScene(&skyModel);
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CCW);
 
     Camera camera(program_id);
 
@@ -199,7 +208,7 @@ int main()
         glm::mat4 projection;
 
         float nearplane = -0.1f;
-        float farplane = -10.0f;
+        float farplane = -20.0f;
         if (g_UsePerspectiveProjection)
         {
             float field_of_view = 3.141592 / 3.0f;
@@ -207,7 +216,7 @@ int main()
         }
         else
         {
-            float t = 1.5f * camera.g_CameraDistance / 2.5f;
+            float t = 3.0f * camera.g_CameraDistance / 1.25f;
             float b = -t;
             float r = t * g_ScreenRatio;
             float l = -r;
@@ -219,8 +228,8 @@ int main()
 
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
-
         glm::mat4 inverse = glm::inverse(camera.view);
+
         // Desenhamos a arma
         model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
@@ -229,16 +238,43 @@ int main()
 
         // Desenhamos a mira
         model = Matrix_Identity();
-        model = inverse * Matrix_Translate(0.0f, 0.0f, -1.0f) * Matrix_Scale(0.005f, 0.005f, 0.005f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
+        model = inverse * Matrix_Translate(0.0f, 0.0f, -1.0f) * Matrix_Scale(0.005f, 0.005f, 0.005f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, AIM);
         DrawVirtualObject("aim");
 
-        // Desenhamos o plano
-        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(8.0f, 8.0f, 8.0f);
+        // Desenhamos o chao
+        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(10.0f, 10.0f, 10.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, PLANE);
         DrawVirtualObject("plane");
+
+        // Desenhamos o ceu
+        model = Matrix_Translate(0.0f, 5.0f, 0.0f) * Matrix_Scale(10.0f, 10.0f, 10.0f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, SKY);
+        DrawVirtualObject("sky");
+
+        // Desenhamos as fronteiras do mapa
+        model = Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, LANDSCAPE);
+        DrawVirtualObject("landscape");
+
+        model = Matrix_Translate(0.0f, -1.0f, 10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, LANDSCAPE);
+        DrawVirtualObject("landscape");
+
+        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(0.0f, -1.0f, 10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, LANDSCAPE);
+        DrawVirtualObject("landscape");
+
+        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, LANDSCAPE);
+        DrawVirtualObject("landscape");
 
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);
@@ -328,6 +364,8 @@ void LoadShadersFromFiles()
     glUseProgram(program_id);
     glUniform1i(glGetUniformLocation(program_id, "sand"), 0);
     glUniform1i(glGetUniformLocation(program_id, "metal"), 1);
+    glUniform1i(glGetUniformLocation(program_id, "landscape"), 2);
+    glUniform1i(glGetUniformLocation(program_id, "sky"), 3);
     glUseProgram(0);
 }
 
@@ -748,7 +786,7 @@ void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives)
 }
 
 void TextRendering_ShowTotalPoints(GLFWwindow *window, int points)
-    {
+{
     static char buffer[50] = "Total points: ?";
     static int numchars = 15;
 
