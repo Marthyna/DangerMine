@@ -868,6 +868,11 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         g_UsePerspectiveProjection = false;
     }
 
+    if (key == GLFW_KEY_C && action == GLFW_PRESS)
+    {
+        g_chosenTool = (g_chosenTool == 0) ? 1 : 0;
+    }
+
     if (key == GLFW_KEY_R && action == GLFW_PRESS)
     {
         LoadShadersFromFiles();
