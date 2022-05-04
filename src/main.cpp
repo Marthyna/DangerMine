@@ -4,6 +4,7 @@
 #define LANDSCAPE 3
 #define SKY 4
 #define BULLET 5
+#define ROCK 6
 #define GUN_ANGLE_Z -0.2f
 #define GUN_ANGLE_Y -1.3f
 #define GUN_ANGLE_X 0.39
@@ -70,6 +71,10 @@ void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4 &M);
 
 void DrawVirtualObject(const char *object_name);
+void DrawLandscape(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
+void DrawLandscapes(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
+void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
+void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
 void BuildTrianglesAndAddToVirtualScene(ObjModel *);
 void ComputeNormals(ObjModel *model);
 
@@ -176,6 +181,7 @@ int main()
     LoadTextureImage("../../data/metal.jpeg");
     LoadTextureImage("../../data/landscape.jpeg");
     LoadTextureImage("../../data/sky.png");
+    LoadTextureImage("../../data/rock.jpeg");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel gunmodel("../../data/gun.obj");
@@ -197,6 +203,10 @@ int main()
     ObjModel skyModel("../../data/sky.obj");
     ComputeNormals(&skyModel);
     BuildTrianglesAndAddToVirtualScene(&skyModel);
+    
+    ObjModel rockModel("../../data/rock.obj");
+    ComputeNormals(&rockModel);
+    BuildTrianglesAndAddToVirtualScene(&rockModel);
 
     ObjModel bulletModel("../../data/bullet.obj");
     ComputeNormals(&bulletModel);
@@ -264,27 +274,12 @@ int main()
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, SKY);
         DrawVirtualObject("sky");
+        
+        //Desenhamos as fronteiras do mapa
+        DrawLandscapes(model, model_uniform, object_id_uniform);
 
-        // Desenhamos as fronteiras do mapa
-        model = Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, LANDSCAPE);
-        DrawVirtualObject("landscape");
-
-        model = Matrix_Translate(0.0f, -1.0f, 10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, LANDSCAPE);
-        DrawVirtualObject("landscape");
-
-        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(0.0f, -1.0f, 10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, LANDSCAPE);
-        DrawVirtualObject("landscape");
-
-        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, LANDSCAPE);
-        DrawVirtualObject("landscape");
+        //Desenhamos as rochas
+        DrawRocks(model, model_uniform, object_id_uniform);        
 
         // Desenhamos o tiro
         model = Matrix_Translate(-0.4f, 0.0f, -1.0f) * Matrix_Scale(0.5f, 0.5f, 0.005f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
@@ -302,6 +297,68 @@ int main()
 
     glfwTerminate();
     return 0;
+}
+
+void DrawLandscapes(glm::mat4 model, GLint model_uniform, GLint object_id_uniform) 
+{
+    model = Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+    DrawLandscape(model, model_uniform, object_id_uniform);
+
+    model = Matrix_Translate(0.0f, -1.0f, 10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+    DrawLandscape(model, model_uniform, object_id_uniform);
+
+    model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(0.0f, -1.0f, 10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+    DrawLandscape(model, model_uniform, object_id_uniform);
+
+    model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+    DrawLandscape(model, model_uniform, object_id_uniform);
+}
+
+void DrawLandscape(glm::mat4 model, GLint model_uniform, GLint object_id_uniform) 
+{
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, LANDSCAPE);
+    DrawVirtualObject("landscape");
+}
+
+void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform) 
+{
+    model = Matrix_Translate(0.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Rotate_Y(0.5f) * Matrix_Translate(1.0f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Rotate_Y(-0.5f) * Matrix_Translate(4.0f, -1.0f, 5.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Translate(-5.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Rotate_Y(0.25f) * Matrix_Translate(7.0f, -1.0f, -3.0f) * Matrix_Scale(0.04f, 0.04f, 0.04f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Rotate_Y(-0.25f) * Matrix_Translate(1.0f, -1.0f, -2.0f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Translate(-2.0f, -1.0f, 6.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Rotate_Y(0.75f) * Matrix_Translate(-5.5f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Rotate_Y(-0.75f) * Matrix_Translate(4.5f, -1.0f, 2.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
+    DrawRock(model, model_uniform, object_id_uniform);
+    
+    model = Matrix_Rotate_Y(-0.8f) * Matrix_Translate(-4.0f, -1.0f, -3.5f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
+    DrawRock(model, model_uniform, object_id_uniform);    
+}
+
+void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform) 
+{
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, ROCK);
+    DrawVirtualObject("rock");
 }
 
 void LoadTextureImage(const char *filename)
@@ -382,6 +439,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "metal"), 1);
     glUniform1i(glGetUniformLocation(program_id, "landscape"), 2);
     glUniform1i(glGetUniformLocation(program_id, "sky"), 3);
+    glUniform1i(glGetUniformLocation(program_id, "rock"), 4);
     glUseProgram(0);
 }
 
