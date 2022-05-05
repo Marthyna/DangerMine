@@ -91,6 +91,7 @@ void TextRendering_Init();
 void TextRendering_PrintString(GLFWwindow *window, const std::string &str, float x, float y, float scale = 1.0f);
 void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives);
 void TextRendering_ShowTotalPoints(GLFWwindow *window, int points);
+void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y, float scale);
 
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
 void ErrorCallback(int error, const char *description);
@@ -259,7 +260,7 @@ int main()
 
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
-        glm::mat4 inverse = glm::inverse(camera.view);        
+        glm::mat4 inverse = invert(camera.view);        
 
         if (g_chosenTool == 0)
         {  

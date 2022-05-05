@@ -114,5 +114,7 @@ void PrintMatrixVectorProduct(glm::mat4 M, glm::vec4 v);
 // por w, no terminal.
 void PrintMatrixVectorProductDivW(glm::mat4 M, glm::vec4 v);
 
+glm::mat4 invert(glm::mat4 matrix);
+
 #endif // _MATRICES_H
        // vim: set spell spelllang=pt_br :

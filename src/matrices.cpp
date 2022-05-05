@@ -345,3 +345,112 @@ void PrintMatrixVectorProductDivW(glm::mat4 M, glm::vec4 v)
     printf("[ %+0.2f  %+0.2f  %+0.2f  %+0.2f ][ %+0.2f ]   [ %+0.2f ]            [ %+0.2f ]\n", M[0][2], M[1][2], M[2][2], M[3][2], v[2], r[2], r[2] / w);
     printf("[ %+0.2f  %+0.2f  %+0.2f  %+0.2f ][ %+0.2f ]   [ %+0.2f ]            [ %+0.2f ]\n", M[0][3], M[1][3], M[2][3], M[3][3], v[3], r[3], r[3] / w);
 };
+
+glm::mat4 invert(glm::mat4 matrix)
+{
+    glm::mat4 square = Matrix(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],
+                              matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],
+                              matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],
+                                         1,            1,            1,            1);
+
+    float determinant_0 = square[1][1]*square[2][2]*square[3][3] +
+                          square[1][2]*square[2][3]*square[3][1] +
+                          square[1][3]*square[2][1]*square[3][2] - 
+                          square[1][3]*square[2][2]*square[3][1] -
+                          square[1][2]*square[2][1]*square[3][3] -
+                          square[1][1]*square[2][3]*square[3][2];
+                             
+    float determinant_1 = square[0][1]*square[2][2]*square[3][3] +
+                          square[0][2]*square[2][3]*square[3][1] +
+                          square[0][3]*square[2][1]*square[3][2] - 
+                          square[0][3]*square[2][2]*square[3][1] -
+                          square[0][2]*square[2][1]*square[3][3] -
+                          square[0][1]*square[2][3]*square[3][2];
+                             
+    float determinant_2 = square[0][1]*square[1][2]*square[3][3] +
+                          square[0][2]*square[1][3]*square[3][1] +
+                          square[0][3]*square[1][1]*square[3][2] - 
+                          square[0][3]*square[1][2]*square[3][1] -
+                          square[0][2]*square[1][1]*square[3][3] -
+                          square[0][1]*square[1][3]*square[3][2];
+                             
+    float determinant_3 = square[0][1]*square[1][2]*square[2][3] +
+                          square[0][2]*square[1][3]*square[2][1] +
+                          square[0][3]*square[1][1]*square[2][2] - 
+                          square[0][3]*square[1][2]*square[2][1] -
+                          square[0][2]*square[1][1]*square[2][3] -
+                          square[0][1]*square[1][3]*square[2][2];
+
+    float determinant = square[0][0] * determinant_0 - square[1][0] * determinant_1
+                      + square[2][0] * determinant_2 - square[3][0] * determinant_3;
+
+    float adg00 = square[1][1]*square[2][2]*square[3][3] +
+                  square[1][2]*square[2][3]*square[3][1] +
+                  square[1][3]*square[2][1]*square[3][2] -
+                  square[1][3]*square[2][2]*square[3][1] -
+                  square[1][2]*square[2][1]*square[3][3] -
+                  square[1][1]*square[2][3]*square[3][2];
+                  
+    float adg01 = - square[0][1]*square[2][2]*square[3][3]
+                  - square[0][2]*square[2][3]*square[3][1]
+                  - square[0][3]*square[2][1]*square[3][2]
+                  + square[0][3]*square[2][2]*square[3][1]
+                  + square[0][2]*square[2][1]*square[3][3]
+                  + square[0][1]*square[2][3]*square[3][2];
+                  
+    float adg02 = square[0][1]*square[1][2]*square[3][3] +
+                  square[0][2]*square[1][3]*square[3][1] +
+                  square[0][3]*square[1][1]*square[3][2] -
+                  square[0][3]*square[1][2]*square[3][1] -
+                  square[0][2]*square[1][1]*square[3][3] -
+                  square[0][1]*square[1][3]*square[3][2];
+                                    
+    float adg10 = - square[1][0]*square[2][2]*square[3][3]
+                  - square[1][2]*square[2][3]*square[3][0]
+                  - square[1][3]*square[2][0]*square[3][2]
+                  + square[1][3]*square[2][2]*square[3][0]
+                  + square[1][2]*square[2][0]*square[3][3]
+                  + square[1][0]*square[2][3]*square[3][2];
+                  
+    float adg11 = square[0][0]*square[2][2]*square[3][3] +
+                  square[0][2]*square[2][3]*square[3][0] +
+                  square[0][3]*square[2][0]*square[3][2] -
+                  square[0][3]*square[2][2]*square[3][0] -
+                  square[0][2]*square[2][0]*square[3][3] -
+                  square[0][0]*square[2][3]*square[3][2];
+                  
+    float adg12 = - square[0][0]*square[1][2]*square[3][3]
+                  - square[0][2]*square[1][3]*square[3][0]
+                  - square[0][3]*square[1][0]*square[3][2]
+                  + square[0][3]*square[1][2]*square[3][0]
+                  + square[0][2]*square[1][0]*square[3][3]
+                  + square[0][0]*square[1][3]*square[3][2];
+                                  
+    float adg20 = square[1][0]*square[2][1]*square[3][3] +
+                  square[1][1]*square[2][3]*square[3][0] +
+                  square[1][3]*square[2][0]*square[3][1] -
+                  square[1][3]*square[2][1]*square[3][0] -
+                  square[1][1]*square[2][0]*square[3][3] -
+                  square[1][0]*square[2][3]*square[3][1];
+                  
+    float adg21 = - square[0][0]*square[2][1]*square[3][3]
+                  - square[0][1]*square[2][3]*square[3][0]
+                  - square[0][3]*square[2][0]*square[3][1]
+                  + square[0][3]*square[2][1]*square[3][0]
+                  + square[0][1]*square[2][0]*square[3][3]
+                  + square[0][0]*square[2][3]*square[3][1];
+                  
+    float adg22 = square[0][0]*square[1][1]*square[3][3] +
+                  square[0][1]*square[1][3]*square[3][0] +
+                  square[0][3]*square[1][0]*square[3][1] -
+                  square[0][3]*square[1][1]*square[3][0] -
+                  square[0][1]*square[1][0]*square[3][3] -
+                  square[0][0]*square[1][3]*square[3][1];
+    
+    glm::mat4 adjugate = Matrix(adg00, adg01, adg02, 0,
+                                adg10, adg11, adg12, 0,
+                                adg20, adg21, adg22, 2.5,
+                                0, 0, 0, 1);
+
+    return (1/determinant) * adjugate;
+}
