@@ -351,7 +351,7 @@ glm::mat4 invert(glm::mat4 matrix)
     glm::mat4 square = Matrix(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],
                               matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],
                               matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],
-                                         1,            1,            1,            1);
+                              matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]);
 
     float determinant_0 = square[1][1]*square[2][2]*square[3][3] +
                           square[1][2]*square[2][3]*square[3][1] +
@@ -404,7 +404,14 @@ glm::mat4 invert(glm::mat4 matrix)
                   square[0][3]*square[1][2]*square[3][1] -
                   square[0][2]*square[1][1]*square[3][3] -
                   square[0][1]*square[1][3]*square[3][2];
-                                    
+                  
+    float adg03 = - square[0][1]*square[1][2]*square[2][3]
+                  - square[0][2]*square[1][3]*square[2][1]
+                  - square[0][3]*square[1][1]*square[2][2]
+                  + square[0][3]*square[1][2]*square[2][1]
+                  + square[0][2]*square[1][1]*square[2][3]
+                  + square[0][1]*square[1][3]*square[2][2];
+                  
     float adg10 = - square[1][0]*square[2][2]*square[3][3]
                   - square[1][2]*square[2][3]*square[3][0]
                   - square[1][3]*square[2][0]*square[3][2]
@@ -425,7 +432,14 @@ glm::mat4 invert(glm::mat4 matrix)
                   + square[0][3]*square[1][2]*square[3][0]
                   + square[0][2]*square[1][0]*square[3][3]
                   + square[0][0]*square[1][3]*square[3][2];
-                                  
+                  
+    float adg13 = square[0][0]*square[1][2]*square[2][3] +
+                  square[0][2]*square[1][3]*square[2][0] +
+                  square[0][3]*square[1][0]*square[2][2] -
+                  square[0][3]*square[1][2]*square[2][0] -
+                  square[0][2]*square[1][0]*square[2][3] -
+                  square[0][0]*square[1][3]*square[2][2];
+                  
     float adg20 = square[1][0]*square[2][1]*square[3][3] +
                   square[1][1]*square[2][3]*square[3][0] +
                   square[1][3]*square[2][0]*square[3][1] -
@@ -446,10 +460,17 @@ glm::mat4 invert(glm::mat4 matrix)
                   square[0][3]*square[1][1]*square[3][0] -
                   square[0][1]*square[1][0]*square[3][3] -
                   square[0][0]*square[1][3]*square[3][1];
+                  
+    float adg23 = - square[0][0]*square[1][1]*square[2][3]
+                  - square[0][1]*square[1][3]*square[2][0]
+                  - square[0][3]*square[1][0]*square[2][1]
+                  + square[0][3]*square[1][1]*square[2][0]
+                  + matrix[0][1]*square[1][0]*square[2][3]
+                  + square[0][0]*square[1][3]*square[2][1];
     
-    glm::mat4 adjugate = Matrix(adg00, adg01, adg02, 0,
-                                adg10, adg11, adg12, 0,
-                                adg20, adg21, adg22, 2.5,
+    glm::mat4 adjugate = Matrix(adg00, adg01, adg02, adg03,
+                                adg10, adg11, adg12, adg13,
+                                adg20, adg21, adg22, adg23,
                                 0, 0, 0, 1);
 
     return (1/determinant) * adjugate;
