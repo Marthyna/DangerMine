@@ -1,6 +1,10 @@
 #include "camera.h"
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
+#include <cstdio>
+#include <ctime>
+#include <thread>
 
 Camera::Camera(GLuint program_id)
 {
@@ -23,7 +27,7 @@ void Camera::update()
     glUniformMatrix4fv(glGetUniformLocation(program_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
 };
 
-void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding)
+void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding, Bullet &bullet)
 {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
@@ -40,6 +44,11 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
         {
             w = -view_vector / norm(view_vector);
         }
+        center_point -= 0.01f * w;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        glm::vec4 w = -view_vector / norm(view_vector);
         center_point -= 0.01f * w;
     }
 
@@ -60,18 +69,11 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
         glm::vec4 w = -view_vector / norm(view_vector);
         center_point -= 0.01f * (crossproduct(up_vector, w));
     }
-    // else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
-    // {
-    //     // Unhides cursor since camera is not looking around anymore
-    //     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    //     // Makes sure the next time the camera looks around it doesn't jump
-    //     firstClick = true;
-    // }
-
-    // if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-    // {
-
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    {
+        bullet.setPosition(glm::vec3(this->center_point[0], this->center_point[1], this->center_point[2]));
+        bullet.draw();
+    }
 
     double mouseX, mouseY;
 

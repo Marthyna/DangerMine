@@ -33,6 +33,8 @@
 #include "matrices.h"
 #include "camera.h"
 #include "collision.h"
+#include "bullet.h"
+#include "sceneobject.h"
 struct ObjModel
 {
     tinyobj::attrib_t attrib;
@@ -54,16 +56,6 @@ struct ObjModel
 
         printf("OK.\n");
     }
-};
-struct SceneObject
-{
-    std::string name;
-    size_t first_index;
-    size_t num_indices;
-    GLenum rendering_mode;
-    GLuint vertex_array_object_id;
-    glm::vec3 bbox_min;
-    glm::vec3 bbox_max;
 };
 
 void PushMatrix(glm::mat4 M);
@@ -206,6 +198,7 @@ int main()
 
     Camera camera(program_id);
     Collision collision;
+    Bullet bullet;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -233,7 +226,6 @@ int main()
 
         bool isColliding = collision.checkForGroundCollision(camera, plane_pos);
 
-        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding);
         camera.update();
 
         glm::mat4 model = Matrix_Identity();
@@ -286,11 +278,9 @@ int main()
         glUniform1i(object_id_uniform, LANDSCAPE);
         DrawVirtualObject("landscape");
 
-        // Desenhamos o tiro
-        model = Matrix_Translate(-0.4f, 0.0f, -1.0f) * Matrix_Scale(0.5f, 0.5f, 0.005f) * Matrix_Rotate_Z(GUN_ANGLE_Z) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_X);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BULLET);
-        DrawVirtualObject("bullet");
+        bullet.initialize(model_uniform, object_id_uniform, BULLET, g_VirtualScene, bbox_max_uniform, bbox_min_uniform);
+
+        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullet);
 
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);
