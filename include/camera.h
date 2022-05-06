@@ -10,6 +10,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <GLFW/glfw3.h>
+#include "bullet.h"
+#include <vector>
 
 class Camera
 {
@@ -34,7 +36,7 @@ public:
 
     Camera(GLuint program_id);
     void update();
-    void listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding);
+    void listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding, std::vector<Bullet> &bullets);
 };
 
 #endif

@@ -26,6 +26,7 @@
 #include <vector>
 #include <limits>
 #include <fstream>
+#include <array>
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
@@ -40,6 +41,8 @@
 #include "matrices.h"
 #include "camera.h"
 #include "collision.h"
+#include "bullet.h"
+#include "sceneobject.h"
 struct ObjModel
 {
     tinyobj::attrib_t attrib;
@@ -62,16 +65,6 @@ struct ObjModel
         printf("OK.\n");
     }
 };
-struct SceneObject
-{
-    std::string name;
-    size_t first_index;
-    size_t num_indices;
-    GLenum rendering_mode;
-    GLuint vertex_array_object_id;
-    glm::vec3 bbox_min;
-    glm::vec3 bbox_max;
-};
 
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4 &M);
@@ -91,7 +84,7 @@ void TextRendering_Init();
 void TextRendering_PrintString(GLFWwindow *window, const std::string &str, float x, float y, float scale = 1.0f);
 void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives);
 void TextRendering_ShowTotalPoints(GLFWwindow *window, int points);
-void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y, float scale);
+void TextRendering_PrintMatrix(GLFWwindow *window, glm::mat4 M, float x, float y, float scale);
 
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
 void ErrorCallback(int error, const char *description);
@@ -115,8 +108,6 @@ float g_ScreenRatio = 1.0f;
 float g_AngleX = 0.0f;
 float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
-
-glm::vec3 plane_pos = glm::vec3(0.0f, -1.0f, 0.0f);
 
 bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false;
@@ -215,7 +206,7 @@ int main()
     ObjModel skyModel("../../data/sky.obj");
     ComputeNormals(&skyModel);
     BuildTrianglesAndAddToVirtualScene(&skyModel);
-    
+
     ObjModel rockModel("../../data/rock.obj");
     ComputeNormals(&rockModel);
     BuildTrianglesAndAddToVirtualScene(&rockModel);
@@ -228,6 +219,13 @@ int main()
 
     Camera camera(program_id);
     Collision collision;
+    std::vector<Bullet> bullets;
+    std::array<std::array<float, 3>, 6> plane_positions{{{0.0f, -1.0f, 0.0f},
+                                                         {0.0f, 5.0f, 0.0f},
+                                                         {0.0f, -1.0f, -10.0f},
+                                                         {0.0f, -1.0f, 10.0f},
+                                                         {0.0f, -1.0f, 10.0f},
+                                                         {0.0f, -1.0f, -10.0f}}};
 
     while (!glfwWindowShouldClose(window))
     {
@@ -253,39 +251,31 @@ int main()
             projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
         }
 
-        bool isColliding = collision.checkForGroundCollision(camera, plane_pos);
+        bool isColliding = collision.checkForGroundCollision(camera, glm::vec3(plane_positions[0][0], plane_positions[0][1], plane_positions[0][2]));
 
-        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding);
+        collision.checkForBulletsCollision(bullets, plane_positions);
+
         camera.update();
 
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
-        glm::mat4 inverse = invert(camera.view);        
+        glm::mat4 inverse = invert(camera.view);
 
         if (g_chosenTool == 0)
-        {  
+        {
             // Desenhamos a arma
-            model = inverse 
-                * Matrix_Translate(0.45f, -0.5f, -0.8f) 
-                * Matrix_Scale(0.08f, 0.08f, 0.08f) 
-                * Matrix_Rotate_Z(GUN_ANGLE_X) 
-                * Matrix_Rotate_Y(GUN_ANGLE_Y) 
-                * Matrix_Rotate_X(GUN_ANGLE_Z);
+            model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(GUN_ANGLE_X) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_Z);
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             glUniform1i(object_id_uniform, GUN);
             DrawVirtualObject("gun");
-        } else if (g_chosenTool == 1)
+        }
+        else if (g_chosenTool == 1)
         {
             // Desenhamos a picareta
-            model = inverse 
-                * Matrix_Translate(0.45f, -0.5f, -0.8f) 
-                * Matrix_Scale(0.08f, 0.08f, 0.08f) 
-                * Matrix_Rotate_Z(PICKAXE_ANGLE_Z) 
-                * Matrix_Rotate_Y(PICKAXE_ANGLE_Y) 
-                * Matrix_Rotate_X(PICKAXE_ANGLE_X);
+            model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(PICKAXE_ANGLE_Z) * Matrix_Rotate_Y(PICKAXE_ANGLE_Y) * Matrix_Rotate_X(PICKAXE_ANGLE_X);
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             glUniform1i(object_id_uniform, PICKAXE);
-            DrawVirtualObject("pickaxe");   
+            DrawVirtualObject("pickaxe");
         }
 
         // Desenhamos a mira
@@ -296,32 +286,50 @@ int main()
         DrawVirtualObject("aim");
 
         // Desenhamos o plano
-        model = Matrix_Translate(plane_pos[0], plane_pos[1], plane_pos[2]) * Matrix_Scale(10.0f, 10.0f, 10.0f);
+        model = Matrix_Translate(plane_positions[0][0], plane_positions[0][1], plane_positions[0][2]) * Matrix_Scale(10.0f, 10.0f, 10.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, PLANE);
         DrawVirtualObject("plane");
 
         // Desenhamos o ceu
-        model = Matrix_Translate(0.0f, 5.0f, 0.0f) * Matrix_Scale(10.0f, 10.0f, 10.0f);
+        model = Matrix_Translate(plane_positions[1][0], plane_positions[1][1], plane_positions[1][2]) * Matrix_Scale(10.0f, 10.0f, 10.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, SKY);
         DrawVirtualObject("sky");
-        
-        //Desenhamos as fronteiras do mapa
+
+        // Desenhamos as fronteiras do mapa
         DrawLandscapes(model, model_uniform, object_id_uniform);
 
-        //Desenhamos as rochas
-        DrawRocks(model, model_uniform, object_id_uniform);        
+        // Desenhamos as rochas
+        DrawRocks(model, model_uniform, object_id_uniform);
 
-        // Desenhamos o tiro
-        model = Matrix_Translate(-0.4f, 0.0f, -1.0f) 
-            * Matrix_Scale(0.5f, 0.5f, 0.005f) 
-            * Matrix_Rotate_Z(GUN_ANGLE_X) 
-            * Matrix_Rotate_Y(GUN_ANGLE_Y) 
-            * Matrix_Rotate_X(GUN_ANGLE_Z);
+        // Desenhamos as fronteiras do mapa
+        model = Matrix_Translate(plane_positions[2][0], plane_positions[2][1], plane_positions[2][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BULLET);
-        DrawVirtualObject("bullet");
+        glUniform1i(object_id_uniform, LANDSCAPE);
+        DrawVirtualObject("landscape");
+
+        model = Matrix_Translate(plane_positions[3][0], plane_positions[3][1], plane_positions[3][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, LANDSCAPE);
+        DrawVirtualObject("landscape");
+
+        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(plane_positions[4][0], plane_positions[4][1], plane_positions[4][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, LANDSCAPE);
+        DrawVirtualObject("landscape");
+
+        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(plane_positions[5][0], plane_positions[5][1], plane_positions[5][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(object_id_uniform, LANDSCAPE);
+        DrawVirtualObject("landscape");
+
+        for (int i = 0; i < bullets.size(); i++)
+        {
+            bullets[i].initialize(model_uniform, object_id_uniform, BULLET, g_VirtualScene, bbox_max_uniform, bbox_min_uniform);
+            bullets[i].draw();
+        }
+        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullets);
 
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);
@@ -335,7 +343,7 @@ int main()
     return 0;
 }
 
-void DrawLandscapes(glm::mat4 model, GLint model_uniform, GLint object_id_uniform) 
+void DrawLandscapes(glm::mat4 model, GLint model_uniform, GLint object_id_uniform)
 {
     model = Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
     DrawLandscape(model, model_uniform, object_id_uniform);
@@ -350,49 +358,49 @@ void DrawLandscapes(glm::mat4 model, GLint model_uniform, GLint object_id_unifor
     DrawLandscape(model, model_uniform, object_id_uniform);
 }
 
-void DrawLandscape(glm::mat4 model, GLint model_uniform, GLint object_id_uniform) 
+void DrawLandscape(glm::mat4 model, GLint model_uniform, GLint object_id_uniform)
 {
-    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     glUniform1i(object_id_uniform, LANDSCAPE);
     DrawVirtualObject("landscape");
 }
 
-void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform) 
+void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform)
 {
     model = Matrix_Translate(0.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Rotate_Y(0.5f) * Matrix_Translate(1.0f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Rotate_Y(-0.5f) * Matrix_Translate(4.0f, -1.0f, 5.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Translate(-5.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Rotate_Y(0.25f) * Matrix_Translate(7.0f, -1.0f, -3.0f) * Matrix_Scale(0.04f, 0.04f, 0.04f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Rotate_Y(-0.25f) * Matrix_Translate(1.0f, -1.0f, -2.0f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Translate(-2.0f, -1.0f, 6.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Rotate_Y(0.75f) * Matrix_Translate(-5.5f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Rotate_Y(-0.75f) * Matrix_Translate(4.5f, -1.0f, 2.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
     DrawRock(model, model_uniform, object_id_uniform);
-    
+
     model = Matrix_Rotate_Y(-0.8f) * Matrix_Translate(-4.0f, -1.0f, -3.5f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
-    DrawRock(model, model_uniform, object_id_uniform);    
+    DrawRock(model, model_uniform, object_id_uniform);
 }
 
-void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform) 
+void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform)
 {
-    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     glUniform1i(object_id_uniform, ROCK);
     DrawVirtualObject("rock");
 }
