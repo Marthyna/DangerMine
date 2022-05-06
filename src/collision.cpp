@@ -31,6 +31,7 @@ void Collision::checkForBulletsCollision(std::vector<Bullet> &bullets, std::arra
             {
                 if (!bullets.empty())
                 {
+                    fprintf(stderr, "ERASE I = %d", i);
                     bullets.erase(bullets.begin() + i);
                 }
             }
