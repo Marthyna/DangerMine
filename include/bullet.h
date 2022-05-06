@@ -23,7 +23,7 @@ public:
     std::map<std::string, SceneObject> g_VirtualScene;
     GLint bbox_max_uniform;
     GLint bbox_min_uniform;
-    Bullet();
+    Bullet(glm::vec4 center_point);
     void initialize(GLint model_uniform, GLint object_id_uniform, int identifier, std::map<std::string, SceneObject> g_VirtualScene, GLint bbox_max_uniform, GLint bbox_min_uniform);
     void draw();
     void setPosition(glm::vec3 position);

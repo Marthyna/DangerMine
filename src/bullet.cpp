@@ -1,9 +1,10 @@
 #include "bullet.h"
 #include <chrono>
 #include <thread>
-Bullet::Bullet()
+
+Bullet::Bullet(glm::vec4 center_point)
 {
-    this->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    this->position = glm::vec3(center_point[0], center_point[1], center_point[2]);
 }
 
 void Bullet::initialize(GLint model_uniform, GLint object_id_uniform, int identifier, std::map<std::string, SceneObject> g_VirtualScene, GLint bbox_max_uniform, GLint bbox_min_uniform)
@@ -18,6 +19,12 @@ void Bullet::initialize(GLint model_uniform, GLint object_id_uniform, int identi
 void Bullet::draw()
 {
     fprintf(stderr, "%f %f %f\n", this->position[0], this->position[1], this->position[2]);
+
+    glm::mat4 model = Matrix_Translate(this->position[0], this->position[1], this->position[2] += 0.1f) * Matrix_Scale(0.025f, 0.025f, 0.2f);
+
+    glUniformMatrix4fv(this->model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+    glUniform1i(this->object_id_uniform, this->identifier);
+
     glBindVertexArray(g_VirtualScene["bullet"].vertex_array_object_id);
 
     glm::vec3 bbox_min = g_VirtualScene["bullet"].bbox_min;
@@ -32,23 +39,4 @@ void Bullet::draw()
         (void *)(g_VirtualScene["bullet"].first_index * sizeof(GLuint)));
 
     glBindVertexArray(0);
-}
-
-void Bullet::setPosition(glm::vec3 position)
-{
-    int lixo = glfwGetTime();
-    int lixo2 = glfwGetTime();
-
-    while (lixo2 - lixo != 5)
-    {
-        this->position = position;
-
-        this->position[2] += 0.1f;
-
-        glm::mat4 model = Matrix_Translate(this->position[0], this->position[1], this->position[2]) * Matrix_Scale(0.025f, 0.025f, 0.2f);
-
-        glUniformMatrix4fv(this->model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(this->object_id_uniform, this->identifier);
-        lixo2 = glfwGetTime();
-    }
 }

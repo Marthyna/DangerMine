@@ -27,7 +27,7 @@ void Camera::update()
     glUniformMatrix4fv(glGetUniformLocation(program_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
 };
 
-void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding, Bullet &bullet)
+void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding, std::vector<Bullet> &bullets)
 {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
@@ -71,8 +71,10 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
     }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
-        bullet.setPosition(glm::vec3(this->center_point[0], this->center_point[1], this->center_point[2]));
-        bullet.draw();
+        Bullet bullet(this->center_point);
+        // bullet.setPosition(glm::vec3(this->center_point[0], this->center_point[1], this->center_point[2]));
+        // bullet.draw();
+        bullets.push_back(bullet);
     }
 
     double mouseX, mouseY;

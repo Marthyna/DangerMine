@@ -198,7 +198,7 @@ int main()
 
     Camera camera(program_id);
     Collision collision;
-    Bullet bullet;
+    std::vector<Bullet> bullets;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -278,9 +278,12 @@ int main()
         glUniform1i(object_id_uniform, LANDSCAPE);
         DrawVirtualObject("landscape");
 
-        bullet.initialize(model_uniform, object_id_uniform, BULLET, g_VirtualScene, bbox_max_uniform, bbox_min_uniform);
-
-        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullet);
+        for (int i = 0; i < bullets.size(); i++)
+        {
+            bullets[i].initialize(model_uniform, object_id_uniform, BULLET, g_VirtualScene, bbox_max_uniform, bbox_min_uniform);
+            bullets[i].draw();
+        }
+        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullets);
 
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);
