@@ -69,13 +69,17 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
         glm::vec4 w = -view_vector / norm(view_vector);
         center_point -= 0.01f * (crossproduct(up_vector, w));
     }
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    static int oldState = GLFW_RELEASE;
+    int newState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+
+    if (newState == GLFW_RELEASE && oldState == GLFW_PRESS)
     {
-        Bullet bullet(this->center_point);
+        Bullet bullet(this->center_point, this->view_vector);
         // bullet.setPosition(glm::vec3(this->center_point[0], this->center_point[1], this->center_point[2]));
         // bullet.draw();
         bullets.push_back(bullet);
     }
+    oldState = newState;
 
     double mouseX, mouseY;
 

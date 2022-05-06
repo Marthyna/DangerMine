@@ -16,14 +16,15 @@
 class Bullet
 {
 public:
-    glm::vec3 position;
+    glm::vec4 position;
+    glm::vec4 cam_view_vector;
     GLint model_uniform;
     GLint object_id_uniform;
     int identifier;
     std::map<std::string, SceneObject> g_VirtualScene;
     GLint bbox_max_uniform;
     GLint bbox_min_uniform;
-    Bullet(glm::vec4 center_point);
+    Bullet(glm::vec4 center_point, glm::vec4 view_vector);
     void initialize(GLint model_uniform, GLint object_id_uniform, int identifier, std::map<std::string, SceneObject> g_VirtualScene, GLint bbox_max_uniform, GLint bbox_min_uniform);
     void draw();
     void setPosition(glm::vec3 position);

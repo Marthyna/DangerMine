@@ -1,10 +1,14 @@
 #include "bullet.h"
 #include <chrono>
 #include <thread>
+#define GUN_ANGLE_Z -0.2f
+#define GUN_ANGLE_Y -4.3f
+#define GUN_ANGLE_X 0.39
 
-Bullet::Bullet(glm::vec4 center_point)
+Bullet::Bullet(glm::vec4 center_point, glm::vec4 view_vector)
 {
-    this->position = glm::vec3(center_point[0], center_point[1], center_point[2]);
+    this->position = glm::vec4(center_point[0], center_point[1] - 0.2f, center_point[2], center_point[3]);
+    this->cam_view_vector = view_vector;
 }
 
 void Bullet::initialize(GLint model_uniform, GLint object_id_uniform, int identifier, std::map<std::string, SceneObject> g_VirtualScene, GLint bbox_max_uniform, GLint bbox_min_uniform)
@@ -18,9 +22,10 @@ void Bullet::initialize(GLint model_uniform, GLint object_id_uniform, int identi
 
 void Bullet::draw()
 {
-    fprintf(stderr, "%f %f %f\n", this->position[0], this->position[1], this->position[2]);
+    glm::vec4 w = -cam_view_vector / norm(cam_view_vector);
+    position -= 0.1f * w;
 
-    glm::mat4 model = Matrix_Translate(this->position[0], this->position[1], this->position[2] += 0.1f) * Matrix_Scale(0.025f, 0.025f, 0.2f);
+    glm::mat4 model = Matrix_Translate(this->position[0], this->position[1], this->position[2]) * Matrix_Scale(0.025f, 0.025f, 0.2f);
 
     glUniformMatrix4fv(this->model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     glUniform1i(this->object_id_uniform, this->identifier);

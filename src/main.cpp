@@ -19,6 +19,7 @@
 #include <vector>
 #include <limits>
 #include <fstream>
+#include <array>
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
@@ -95,8 +96,6 @@ float g_ScreenRatio = 1.0f;
 float g_AngleX = 0.0f;
 float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
-
-glm::vec3 plane_pos = glm::vec3(0.0f, -1.0f, 0.0f);
 
 bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false;
@@ -199,6 +198,12 @@ int main()
     Camera camera(program_id);
     Collision collision;
     std::vector<Bullet> bullets;
+    std::array<std::array<float, 3>, 6> plane_positions{{{0.0f, -1.0f, 0.0f},
+                                                         {0.0f, 5.0f, 0.0f},
+                                                         {0.0f, -1.0f, -10.0f},
+                                                         {0.0f, -1.0f, 10.0f},
+                                                         {0.0f, -1.0f, 10.0f},
+                                                         {0.0f, -1.0f, -10.0f}}};
 
     while (!glfwWindowShouldClose(window))
     {
@@ -224,7 +229,9 @@ int main()
             projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
         }
 
-        bool isColliding = collision.checkForGroundCollision(camera, plane_pos);
+        bool isColliding = collision.checkForGroundCollision(camera, glm::vec3(plane_positions[0][0], plane_positions[0][1], plane_positions[0][2]));
+
+        collision.checkForBulletsCollision(bullets, plane_positions);
 
         camera.update();
 
@@ -246,34 +253,34 @@ int main()
         DrawVirtualObject("aim");
 
         // Desenhamos o plano
-        model = Matrix_Translate(plane_pos[0], plane_pos[1], plane_pos[2]) * Matrix_Scale(10.0f, 10.0f, 10.0f);
+        model = Matrix_Translate(plane_positions[0][0], plane_positions[0][1], plane_positions[0][2]) * Matrix_Scale(10.0f, 10.0f, 10.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, PLANE);
         DrawVirtualObject("plane");
 
         // Desenhamos o ceu
-        model = Matrix_Translate(0.0f, 5.0f, 0.0f) * Matrix_Scale(10.0f, 10.0f, 10.0f);
+        model = Matrix_Translate(plane_positions[1][0], plane_positions[1][1], plane_positions[1][2]) * Matrix_Scale(10.0f, 10.0f, 10.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, SKY);
         DrawVirtualObject("sky");
 
         // Desenhamos as fronteiras do mapa
-        model = Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        model = Matrix_Translate(plane_positions[2][0], plane_positions[2][1], plane_positions[2][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, LANDSCAPE);
         DrawVirtualObject("landscape");
 
-        model = Matrix_Translate(0.0f, -1.0f, 10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        model = Matrix_Translate(plane_positions[3][0], plane_positions[3][1], plane_positions[3][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, LANDSCAPE);
         DrawVirtualObject("landscape");
 
-        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(0.0f, -1.0f, 10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(plane_positions[4][0], plane_positions[4][1], plane_positions[4][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, LANDSCAPE);
         DrawVirtualObject("landscape");
 
-        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(0.0f, -1.0f, -10.0f) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(plane_positions[5][0], plane_positions[5][1], plane_positions[5][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(object_id_uniform, LANDSCAPE);
         DrawVirtualObject("landscape");
