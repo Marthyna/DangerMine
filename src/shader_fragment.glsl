@@ -27,6 +27,7 @@ uniform mat4 projection;
 #define BULLET 5
 #define ROCK 6
 #define PICKAXE 7
+#define ENEMY 8
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -39,6 +40,7 @@ uniform sampler2D metal;
 uniform sampler2D landscape;
 uniform sampler2D sky;
 uniform sampler2D rock;
+uniform sampler2D enemy;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -165,6 +167,25 @@ void main()
         V = (position_model.y - bbox_min.y)/(bbox_max.y - bbox_min.y);
 
         Kd0 = texture(rock, vec2(U,V)).rgb;
+        float lambert = max(0,dot(n,l));
+        color = Kd0 * (lambert + 0.01);
+        color = pow(color, vec3(1.0,1.0,1.0)/2.2);
+    }
+    else if ( object_id == ENEMY )
+    {
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        U = (position_model.x - bbox_min.x)/(bbox_max.x - bbox_min.x);
+        V = (position_model.y - bbox_min.y)/(bbox_max.y - bbox_min.y);
+
+        Kd0 = texture(enemy, vec2(U,V)).rgb;
         float lambert = max(0,dot(n,l));
         color = Kd0 * (lambert + 0.01);
         color = pow(color, vec3(1.0,1.0,1.0)/2.2);

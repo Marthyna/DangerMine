@@ -6,6 +6,7 @@
 #define BULLET 5
 #define ROCK 6
 #define PICKAXE 7
+#define ENEMY 8
 
 #define NUM_OF_ROCKS 12
 
@@ -60,18 +61,11 @@ struct ObjModel
 
     ObjModel(const char *filename, const char *basepath = NULL, bool triangulate = true)
     {
-        printf("Carregando modelo \"%s\"... ", filename);
-
         std::string err;
         bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename, basepath, triangulate);
 
-        if (!err.empty())
-            fprintf(stderr, "\n%s\n", err.c_str());
-
-        if (!ret)
-            throw std::runtime_error("Erro ao carregar modelo.");
-
-        printf("OK.\n");
+        if (!err.empty()) fprintf(stderr, "\n%s\n", err.c_str());
+        if (!ret) throw std::runtime_error("Erro ao carregar modelo.");
     }
 };
 
@@ -85,6 +79,7 @@ void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
 void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform, std::array<rock, NUM_OF_ROCKS> rocks);
 void BuildTrianglesAndAddToVirtualScene(ObjModel *);
 void ComputeNormals(ObjModel *model);
+void BuildObject(const char *path);
 
 void LoadShadersFromFiles();
 void LoadTextureImage(const char *filename);
@@ -169,7 +164,6 @@ int main()
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     GLFWwindow *window;
     window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_WIDTH, "Danger Mine", NULL, NULL);
     if (!window)
@@ -198,39 +192,18 @@ int main()
     LoadTextureImage("../../data/landscape.jpeg");
     LoadTextureImage("../../data/sky.png");
     LoadTextureImage("../../data/rock.jpeg");
+    LoadTextureImage("../../data/enemy.jpeg");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel gunmodel("../../data/gun.obj");
-    ComputeNormals(&gunmodel);
-    BuildTrianglesAndAddToVirtualScene(&gunmodel);
-
-    ObjModel pickaxeModel("../../data/pickaxe.obj");
-    ComputeNormals(&pickaxeModel);
-    BuildTrianglesAndAddToVirtualScene(&pickaxeModel);
-
-    ObjModel aimModel("../../data/aim.obj");
-    ComputeNormals(&aimModel);
-    BuildTrianglesAndAddToVirtualScene(&aimModel);
-
-    ObjModel planeModel("../../data/plane.obj");
-    ComputeNormals(&planeModel);
-    BuildTrianglesAndAddToVirtualScene(&planeModel);
-
-    ObjModel landscapeModel("../../data/landscape.obj");
-    ComputeNormals(&landscapeModel);
-    BuildTrianglesAndAddToVirtualScene(&landscapeModel);
-
-    ObjModel skyModel("../../data/sky.obj");
-    ComputeNormals(&skyModel);
-    BuildTrianglesAndAddToVirtualScene(&skyModel);
-
-    ObjModel rockModel("../../data/rock.obj");
-    ComputeNormals(&rockModel);
-    BuildTrianglesAndAddToVirtualScene(&rockModel);
-
-    ObjModel bulletModel("../../data/bullet.obj");
-    ComputeNormals(&bulletModel);
-    BuildTrianglesAndAddToVirtualScene(&bulletModel);
+    BuildObject("../../data/gun.obj");
+    BuildObject("../../data/pickaxe.obj");
+    BuildObject("../../data/aim.obj");
+    BuildObject("../../data/plane.obj");
+    BuildObject("../../data/landscape.obj");
+    BuildObject("../../data/sky.obj");
+    BuildObject("../../data/rock.obj");
+    BuildObject("../../data/bullet.obj");
+    BuildObject("../../data/enemy.obj");
 
     glEnable(GL_DEPTH_TEST);
 
@@ -329,27 +302,13 @@ int main()
         // Desenhamos as rochas
         DrawRocks(model, model_uniform, object_id_uniform, rocks);
 
-        // Desenhamos as fronteiras do mapa
-        model = Matrix_Translate(plane_positions[2][0], plane_positions[2][1], plane_positions[2][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
+        // Desenhamos os inimigos
+        model = Matrix_Translate(0.0f, 0.0f, -2.0f) * Matrix_Scale(0.0025f, 0.0025f, 0.0025f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, LANDSCAPE);
-        DrawVirtualObject("landscape");
+        glUniform1i(object_id_uniform, ENEMY);
+        DrawVirtualObject("enemy");
 
-        model = Matrix_Translate(plane_positions[3][0], plane_positions[3][1], plane_positions[3][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, LANDSCAPE);
-        DrawVirtualObject("landscape");
-
-        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(plane_positions[4][0], plane_positions[4][1], plane_positions[4][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, LANDSCAPE);
-        DrawVirtualObject("landscape");
-
-        model = Matrix_Rotate_Y(1.571f) * Matrix_Translate(plane_positions[5][0], plane_positions[5][1], plane_positions[5][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, LANDSCAPE);
-        DrawVirtualObject("landscape");
-
+        // Desenhamos o tiro
         for (int i = 0; i < bullets.size(); i++)
         {
             bullets[i].initialize(model_uniform, object_id_uniform, BULLET, g_VirtualScene, bbox_max_uniform, bbox_min_uniform);
@@ -360,7 +319,6 @@ int main()
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);
         TextRendering_ShowTotalPoints(window, g_points);
-
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -398,36 +356,6 @@ void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform, st
         model = Matrix_Rotate_Y(rocks[i].rotateY) * Matrix_Translate(rocks[i].position[0], rocks[i].position[1], rocks[i].position[2]) * Matrix_Scale(rocks[i].size, rocks[i].size, rocks[i].size);
         DrawRock(model, model_uniform, object_id_uniform);
     }
-
-    // model = Matrix_Translate(0.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Rotate_Y(0.5f) * Matrix_Translate(1.0f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Rotate_Y(-0.5f) * Matrix_Translate(4.0f, -1.0f, 5.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Translate(-5.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Rotate_Y(0.25f) * Matrix_Translate(7.0f, -1.0f, -3.0f) * Matrix_Scale(0.04f, 0.04f, 0.04f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Rotate_Y(-0.25f) * Matrix_Translate(1.0f, -1.0f, -2.0f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Translate(-2.0f, -1.0f, 6.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Rotate_Y(0.75f) * Matrix_Translate(-5.5f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Rotate_Y(-0.75f) * Matrix_Translate(4.5f, -1.0f, 2.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
-    // DrawRock(model, model_uniform, object_id_uniform);
-
-    // model = Matrix_Rotate_Y(-0.8f) * Matrix_Translate(-4.0f, -1.0f, -3.5f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
-    // DrawRock(model, model_uniform, object_id_uniform);
 }
 
 void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform)
@@ -516,6 +444,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "landscape"), 2);
     glUniform1i(glGetUniformLocation(program_id, "sky"), 3);
     glUniform1i(glGetUniformLocation(program_id, "rock"), 4);
+    glUniform1i(glGetUniformLocation(program_id, "enemy"), 5);
     glUseProgram(0);
 }
 
@@ -861,11 +790,6 @@ void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
     mouseYOffset = yoffset;
-    // g_cameradistance -= 0.1f * yoffset;
-
-    // const float verysmallnumber = std::numeric_limits<float>::epsilon();
-    // if (g_CameraDistance < verysmallnumber)
-    //     g_CameraDistance = verysmallnumber;
 }
 
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
@@ -957,4 +881,11 @@ void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
     g_ScreenRatio = (float)width / height;
+}
+
+void BuildObject(const char *path)
+{
+    ObjModel model(path);
+    ComputeNormals(&model);
+    BuildTrianglesAndAddToVirtualScene(&model);
 }

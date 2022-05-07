@@ -117,6 +117,4 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
 
     lookat_point = glm::vec4(x, y, z - 1.0f, 1.0f);
     view_vector = lookat_point - center_point;
-
-    // }
 }
