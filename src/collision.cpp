@@ -1,8 +1,9 @@
 #include "collision.h"
+#ifdef __APPLE__
+    #include <array>
+#endif
 
-Collision::Collision()
-{
-}
+Collision::Collision() {}
 
 bool Collision::checkForGroundCollision(Camera camera, glm::vec3 ground_pos)
 {
