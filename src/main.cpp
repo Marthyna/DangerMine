@@ -7,6 +7,8 @@
 #define ROCK 6
 #define PICKAXE 7
 
+#define NUM_OF_ROCKS 12
+
 #define GUN_ANGLE_Z -0.2f
 #define GUN_ANGLE_Y -1.3f
 #define GUN_ANGLE_X 0.39
@@ -43,6 +45,13 @@
 #include "collision.h"
 #include "bullet.h"
 #include "sceneobject.h"
+
+struct rock
+{
+    std::array<float, 3> position;
+    float size;
+    float rotateY;
+};
 struct ObjModel
 {
     tinyobj::attrib_t attrib;
@@ -73,7 +82,7 @@ void DrawVirtualObject(const char *object_name);
 void DrawLandscape(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
 void DrawLandscapes(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
 void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
-void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
+void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform, std::array<rock, NUM_OF_ROCKS> rocks);
 void BuildTrianglesAndAddToVirtualScene(ObjModel *);
 void ComputeNormals(ObjModel *model);
 
@@ -132,6 +141,14 @@ GLint bbox_max_uniform;
 int g_lives = 3;
 int g_points = 0;
 int g_chosenTool = 0; // 0 = gun, 1 = pickaxe (standart is gun)
+
+float RandomFloat(float a, float b)
+{
+    float random = ((float)rand()) / (float)RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
 
 int main()
 {
@@ -227,6 +244,15 @@ int main()
                                                          {0.0f, -1.0f, 10.0f},
                                                          {0.0f, -1.0f, -10.0f}}};
 
+    std::array<rock, NUM_OF_ROCKS> rocks;
+
+    for (int i = 0; i < rocks.size(); i++)
+    {
+        rocks[i].position = {RandomFloat(-8, 8), -1, RandomFloat(-8, 8)};
+        rocks[i].size = RandomFloat(0.02, 0.035);
+        rocks[i].rotateY = RandomFloat(-2, 0.75);
+    }
+
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -301,7 +327,7 @@ int main()
         DrawLandscapes(model, model_uniform, object_id_uniform);
 
         // Desenhamos as rochas
-        DrawRocks(model, model_uniform, object_id_uniform);
+        DrawRocks(model, model_uniform, object_id_uniform, rocks);
 
         // Desenhamos as fronteiras do mapa
         model = Matrix_Translate(plane_positions[2][0], plane_positions[2][1], plane_positions[2][2]) * Matrix_Scale(5.0f, 6.0f, 6.0f);
@@ -329,7 +355,7 @@ int main()
             bullets[i].initialize(model_uniform, object_id_uniform, BULLET, g_VirtualScene, bbox_max_uniform, bbox_min_uniform);
             bullets[i].draw();
         }
-        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullets);
+        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullets, g_chosenTool);
 
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);
@@ -365,37 +391,43 @@ void DrawLandscape(glm::mat4 model, GLint model_uniform, GLint object_id_uniform
     DrawVirtualObject("landscape");
 }
 
-void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform)
+void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform, std::array<rock, NUM_OF_ROCKS> rocks)
 {
-    model = Matrix_Translate(0.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    for (int i = 0; i < rocks.size(); i++)
+    {
+        model = Matrix_Rotate_Y(rocks[i].rotateY) * Matrix_Translate(rocks[i].position[0], rocks[i].position[1], rocks[i].position[2]) * Matrix_Scale(rocks[i].size, rocks[i].size, rocks[i].size);
+        DrawRock(model, model_uniform, object_id_uniform);
+    }
 
-    model = Matrix_Rotate_Y(0.5f) * Matrix_Translate(1.0f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Translate(0.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 
-    model = Matrix_Rotate_Y(-0.5f) * Matrix_Translate(4.0f, -1.0f, 5.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Rotate_Y(0.5f) * Matrix_Translate(1.0f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 
-    model = Matrix_Translate(-5.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Rotate_Y(-0.5f) * Matrix_Translate(4.0f, -1.0f, 5.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 
-    model = Matrix_Rotate_Y(0.25f) * Matrix_Translate(7.0f, -1.0f, -3.0f) * Matrix_Scale(0.04f, 0.04f, 0.04f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Translate(-5.0f, -1.0f, -3.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 
-    model = Matrix_Rotate_Y(-0.25f) * Matrix_Translate(1.0f, -1.0f, -2.0f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Rotate_Y(0.25f) * Matrix_Translate(7.0f, -1.0f, -3.0f) * Matrix_Scale(0.04f, 0.04f, 0.04f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 
-    model = Matrix_Translate(-2.0f, -1.0f, 6.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Rotate_Y(-0.25f) * Matrix_Translate(1.0f, -1.0f, -2.0f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 
-    model = Matrix_Rotate_Y(0.75f) * Matrix_Translate(-5.5f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Translate(-2.0f, -1.0f, 6.0f) * Matrix_Scale(0.035f, 0.035f, 0.035f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 
-    model = Matrix_Rotate_Y(-0.75f) * Matrix_Translate(4.5f, -1.0f, 2.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Rotate_Y(0.75f) * Matrix_Translate(-5.5f, -1.0f, 0.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 
-    model = Matrix_Rotate_Y(-0.8f) * Matrix_Translate(-4.0f, -1.0f, -3.5f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
-    DrawRock(model, model_uniform, object_id_uniform);
+    // model = Matrix_Rotate_Y(-0.75f) * Matrix_Translate(4.5f, -1.0f, 2.0f) * Matrix_Scale(0.02f, 0.02f, 0.02f);
+    // DrawRock(model, model_uniform, object_id_uniform);
+
+    // model = Matrix_Rotate_Y(-0.8f) * Matrix_Translate(-4.0f, -1.0f, -3.5f) * Matrix_Scale(0.015f, 0.015f, 0.015f);
+    // DrawRock(model, model_uniform, object_id_uniform);
 }
 
 void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform)

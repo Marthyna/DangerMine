@@ -36,7 +36,7 @@ public:
 
     Camera(GLuint program_id);
     void update();
-    void listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding, std::vector<Bullet> &bullets);
+    void listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding, std::vector<Bullet> &bullets, int g_chosenTool);
 };
 
 #endif
