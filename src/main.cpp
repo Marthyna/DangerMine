@@ -183,7 +183,6 @@ int main()
     LoadTextureImage("../../data/landscape.jpeg");
     LoadTextureImage("../../data/sky.png");
     LoadTextureImage("../../data/rock.jpeg");
-    LoadTextureImage("../../data/enemy.jpeg");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     BuildObject("../../data/gun.obj");
@@ -438,7 +437,6 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "landscape"), 2);
     glUniform1i(glGetUniformLocation(program_id, "sky"), 3);
     glUniform1i(glGetUniformLocation(program_id, "rock"), 4);
-    glUniform1i(glGetUniformLocation(program_id, "enemy"), 5);
     glUseProgram(0);
 }
 

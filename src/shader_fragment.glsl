@@ -40,7 +40,6 @@ uniform sampler2D metal;
 uniform sampler2D landscape;
 uniform sampler2D sky;
 uniform sampler2D rock;
-uniform sampler2D enemy;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -68,7 +67,8 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(vec4(1.0,1.0,0.0,0.0));
+    vec4 l = normalize(vec4(-1.0,1.0,0.0,0.0));
+    vec4 l_dir = normalize(l - camera_position);
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
@@ -77,6 +77,11 @@ void main()
     float U = 0.0;
     float V = 0.0;
     vec3 Kd0;
+    vec3 Ka;
+    vec3 Kd; // Refletância difusa
+    vec3 Ks; // Refletância especular
+    float q; // Expoente especular para o modelo de iluminação de Phong
+    vec4 r = -l + 2*n*(dot(n,l)); // vetor de reflexão especular ideal
 
     if (object_id == AIM)
     {
@@ -120,21 +125,22 @@ void main()
     } 
     else if ( object_id == GUN || object_id == PICKAXE)
     {
-        float minx = bbox_min.x;
-        float maxx = bbox_max.x;
+        Kd = vec3(0.2, 0.2, 0.2);
+        Ks = vec3(0.8,0.8,0.8);
+        Ka = vec3(0.0,0.0,0.0);
+        q = 42.0;
+       
+        vec3 I = vec3(0.0, 0.0, 0.0);
 
-        float miny = bbox_min.y;
-        float maxy = bbox_max.y;
+        if (dot(normalize(p - l), normalize(l_dir)) < 0.86602) {
+            I = vec3(1.0,1.0,1.0);
+        }
 
-        float minz = bbox_min.z;
-        float maxz = bbox_max.z;
-
-        U = (position_model.x - bbox_min.x)/(bbox_max.x - bbox_min.x);
-        V = (position_model.y - bbox_min.y)/(bbox_max.y - bbox_min.y);
-
-        Kd0 = texture(metal, vec2(U,V)).rgb;
-        float lambert = max(0,dot(n,l));
-        color = Kd0 * (lambert + 0.01);
+        vec3 Ia = vec3(0.2, 0.2, 0.2);
+        vec3 lambert_diffuse_term = Kd*I*max(0, dot(n,l));
+        vec3 ambient_term = Ka*Ia;
+        vec3 phong_specular_term  = Ks*I*pow(max(0, dot(r,v)), q); 
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
         color = pow(color, vec3(1.0,1.0,1.0)/2.2);
     }
     else if ( object_id == PLANE )
@@ -193,21 +199,22 @@ void main()
     }
     else if ( object_id == ENEMY )
     {
-        float minx = bbox_min.x;
-        float maxx = bbox_max.x;
+        Kd = vec3(0.2667, 0.902, 0.0902);
+        Ks = vec3(0.8,0.8,0.8);
+        Ka = vec3(0.0,0.0,0.0);
+        q = 42.0;
+       
+        vec3 I = vec3(0.0, 0.0, 0.0);
 
-        float miny = bbox_min.y;
-        float maxy = bbox_max.y;
+        if (dot(normalize(p - l), normalize(l_dir)) < 0.86602) {
+            I = vec3(1.0,1.0,1.0);
+        }
 
-        float minz = bbox_min.z;
-        float maxz = bbox_max.z;
-
-        U = (position_model.x - bbox_min.x)/(bbox_max.x - bbox_min.x);
-        V = (position_model.y - bbox_min.y)/(bbox_max.y - bbox_min.y);
-
-        Kd0 = texture(enemy, vec2(U,V)).rgb;
-        float lambert = max(0,dot(n,l));
-        color = Kd0 * (lambert + 0.01);
+        vec3 Ia = vec3(0.2, 0.2, 0.2);
+        vec3 lambert_diffuse_term = Kd*I*max(0, dot(n,l));
+        vec3 ambient_term = Ka*Ia;
+        vec3 phong_specular_term  = Ks*I*pow(max(0, dot(r,v)), q); 
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
         color = pow(color, vec3(1.0,1.0,1.0)/2.2);
     }
 }
