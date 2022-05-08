@@ -13,6 +13,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <GLFW/glfw3.h>
 #include "sceneobject.h"
+#include "camera.h"
 
 class Player
 {
@@ -26,14 +27,15 @@ public:
     float rotateZ;
 
     Player();
-    void draw(std::map<std::string, SceneObject> &g_VirtualScene, 
-              glm::mat4 model, 
-              GLint &bbox_max_uniform, 
-              GLint &bbox_min_uniform, 
-              GLint &object_id_uniform, 
-              GLint &model_uniform, 
+    void draw(std::map<std::string, SceneObject> &g_VirtualScene,
+              glm::mat4 &model,
+              GLint &bbox_max_uniform,
+              GLint &bbox_min_uniform,
+              GLint &object_id_uniform,
+              GLint &model_uniform,
               int identifier,
-              glm::mat4 inverse);
+              glm::mat4 inverse,
+              Camera camera);
 };
 
 #endif

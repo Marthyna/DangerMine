@@ -9,7 +9,7 @@
 #define ENEMY 8
 
 #define NUM_OF_ROCKS 12
-#define NUM_OF_ENEMIES 3
+#define NUM_OF_ENEMIES 6
 
 #define PICKAXE_ANGLE_X 2.356194
 #define PICKAXE_ANGLE_Y 6.086837
@@ -133,6 +133,7 @@ GLint bbox_max_uniform;
 int g_lives = 3;
 int g_points = 0;
 int g_chosenTool = 0; // 0 = gun, 1 = pickaxe (standart is gun)
+bool end = false;
 
 int main()
 {
@@ -246,13 +247,16 @@ int main()
         }
 
         bool isCollidingWithGround = collision.checkForGroundCollision(
-            camera, 
-            glm::vec3(plane_positions[0][0], 
-                      plane_positions[0][1], 
+            camera,
+            glm::vec3(plane_positions[0][0],
+                      plane_positions[0][1],
                       plane_positions[0][2]));
 
         bool isCollidingWithRock = collision.checkForRocksCollision(player, rocks);
-        if (isCollidingWithRock) return 0;
+
+        // if (isCollidingWithRock)
+        //     return 0;
+
         collision.checkForBulletScenaryCollision(bullets, plane_positions);
         camera.update();
 
@@ -260,19 +264,32 @@ int main()
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
         glm::mat4 inverse = invert(camera.view);
 
-        if (g_chosenTool == 0) // Desenhamos o player com a arma
-            player.draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, GUN, inverse);
+        // Desenhamos o player com a arma
+        if (g_chosenTool == 0)
+        {
+            player.draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, GUN, inverse, camera);
+        }
         else if (g_chosenTool == 1)
         {
             // Desenhamos a picareta
-            model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) 
-                * Matrix_Scale(0.08f, 0.08f, 0.08f) 
-                * Matrix_Rotate_Z(PICKAXE_ANGLE_Z) 
-                * Matrix_Rotate_Y(PICKAXE_ANGLE_Y) 
-                * Matrix_Rotate_X(PICKAXE_ANGLE_X);
+            model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(PICKAXE_ANGLE_Z) * Matrix_Rotate_Y(PICKAXE_ANGLE_Y) * Matrix_Rotate_X(PICKAXE_ANGLE_X);
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             glUniform1i(object_id_uniform, PICKAXE);
             DrawVirtualObject("pickaxe");
+        }
+        bool isCollidingWithEnemy = collision.checkForEnemiesPlayerCollision(camera, enemies);
+
+        if (isCollidingWithEnemy)
+        {
+            if (g_lives > 0)
+            {
+                g_lives--;
+            }
+        }
+
+        if (g_lives <= 0)
+        {
+            end = true;
         }
 
         // Desenhamos a mira
@@ -299,8 +316,8 @@ int main()
 
         // Desenhamos as rochas
         for (int i = 0; i < rocks.size(); i++)
-            if (!isCollidingWithRock)
-                rocks[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ROCK);
+            // if (!isCollidingWithRock)
+            rocks[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ROCK);
 
         // Desenhamos os inimigos
         for (int i = 0; i < enemies.size(); i++)
@@ -839,6 +856,17 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
 void ErrorCallback(int error, const char *description)
 {
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
+}
+
+void TextRendering_ShowGameEnd(GLFWwindow *window)
+{
+    static char buffer[20] = "FIM";
+    static int numchars = 3;
+
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    TextRendering_PrintString(window, buffer, 1.0f * charwidth, 1.0f - lineheight, 1.0f);
 }
 
 void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives)

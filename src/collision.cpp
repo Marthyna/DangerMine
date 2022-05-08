@@ -1,6 +1,6 @@
 #include "collision.h"
 #ifdef __APPLE__
-    #include <array>
+#include <array>
 #endif
 
 Collision::Collision() {}
@@ -12,7 +12,8 @@ bool Collision::checkForGroundCollision(Camera camera, glm::vec3 ground_pos)
 
 void Collision::checkForBulletScenaryCollision(std::vector<Bullet> &bullets, std::array<std::array<float, 3>, 6> plane_positions)
 {
-    if (bullets.size() == 0) return;
+    if (bullets.size() == 0)
+        return;
 
     for (int i = 0; i < bullets.size(); i++)
         for (int j = 0; j < plane_positions.size(); j++)
@@ -30,10 +31,12 @@ void Collision::checkForEnemiesCollision(std::vector<Enemy> enemies)
 {
     for (int i = 0; i < enemies.size(); i++)
         for (int j = 1; j < enemies.size(); j++)
-            if (enemies[i].getCenter()[0] - enemies[j].getCenter()[0] < enemies[i].getSize()[0] / 2 + enemies[j].getSize()[0] / 2)
-                if (enemies[i].getCenter()[1] - enemies[j].getCenter()[1] < enemies[i].getSize()[1] / 2 + enemies[j].getSize()[1] / 2)
-                    if (enemies[i].getCenter()[2] - enemies[j].getCenter()[2] < enemies[i].getSize()[2] / 2 + enemies[j].getSize()[2] / 2)
-                        fprintf(stderr, "%d %d colidem \n", i, j);
+            if ((enemies[i].bbox_min.x <= enemies[j].bbox_max.x && enemies[i].bbox_max.x >= enemies[j].bbox_min.x) &&
+                (enemies[i].bbox_min.y <= enemies[j].bbox_max.y && enemies[i].bbox_max.y >= enemies[j].bbox_min.y) &&
+                (enemies[i].bbox_min.z <= enemies[j].bbox_max.z && enemies[i].bbox_max.z >= enemies[j].bbox_min.z))
+            {
+                fprintf(stderr, "%d %d colidem \n", i, j);
+            }
 };
 
 bool Collision::checkForBulletEnemyCollision(std::vector<Enemy> &enemies, std::vector<Bullet> &bullets)
@@ -56,14 +59,26 @@ bool Collision::checkForRocksCollision(Player player, std::vector<Rock> rocks)
 {
     for (int i = 0; i < rocks.size(); i++)
     {
-        if ((rocks[i].bbox_min.x <= player.bbox_max.x && rocks[i].bbox_max.x >= player.bbox_min.x) &&
-            (rocks[i].bbox_min.y <= player.bbox_max.y && rocks[i].bbox_max.y >= player.bbox_min.y) &&
-            (rocks[i].bbox_min.z <= player.bbox_max.z && rocks[i].bbox_max.z >= player.bbox_min.z))
+        if ((player.bbox_min.x <= rocks[i].bbox_max.x && player.bbox_max.x >= rocks[i].bbox_min.x) &&
+            (player.bbox_min.y <= rocks[i].bbox_max.y && player.bbox_max.y >= rocks[i].bbox_min.y) &&
+            (player.bbox_min.z <= rocks[i].bbox_max.z && player.bbox_max.z >= rocks[i].bbox_min.z))
         {
-            fprintf(stdout, "PEDRA bbox_min.x = %f bbox_min.y = %f bbox_min.z = %f\n", &rocks[i].bbox_min.x, &rocks[i].bbox_min.y, &rocks[i].bbox_min.z);
-            fprintf(stdout, "PEDRA bbox_max.x = %f bbox_max.y = %f bbox_max.z = %f\n", &rocks[i].bbox_max.x, &rocks[i].bbox_max.y, &rocks[i].bbox_max.z);
-            fprintf(stdout, "PLAYER bbox_min.x = %f bbox_min.y = %f bbox_min.z = %f\n", player.bbox_min.x, player.bbox_min.y, player.bbox_min.z);
-            fprintf(stdout, "PLAYER bbox_max.x = %f bbox_max.y = %f bbox_max.z = %f\n", player.bbox_max.x, player.bbox_max.y, player.bbox_max.z);
+            // fprintf(stderr, "colidiu");
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Collision::checkForEnemiesPlayerCollision(Camera camera, std::vector<Enemy> &enemies)
+{
+    for (int i = 0; i < enemies.size(); i++)
+    {
+        if ((camera.center_point.x + 0.5f <= enemies[i].bbox_max.x && camera.center_point.x >= enemies[i].bbox_min.x) &&
+            (camera.center_point.y + 0.5f <= enemies[i].bbox_max.y && camera.center_point.y >= enemies[i].bbox_min.y) &&
+            (camera.center_point.z + 0.5f <= enemies[i].bbox_max.z && camera.center_point.z >= enemies[i].bbox_min.z))
+        {
+            enemies.erase(enemies.begin() + i);
             return true;
         }
     }

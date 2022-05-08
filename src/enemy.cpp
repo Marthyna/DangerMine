@@ -6,7 +6,7 @@ Enemy::Enemy()
     this->t = 0.0f;
 }
 
-void Enemy::draw(Camera camera, std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier)
+void Enemy::draw(Camera camera, std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 &model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier)
 {
     this->goToPlayer(camera);
 
@@ -55,7 +55,7 @@ void Enemy::setControlPoints(Camera camera)
 
 void Enemy::goToPlayer(Camera camera)
 {
-    this->position = cubicBezier(this->position, this->p1, this->p2, camera.center_point, this->t);
+    this->position = cubicBezier(this->position, this->p1, this->p2, camera.center_point - 0.5f, this->t);
     this->t += 0.002f;
 }
 

@@ -29,6 +29,7 @@ public:
     void checkForEnemiesCollision(std::vector<Enemy> enemies);
     bool checkForBulletEnemyCollision(std::vector<Enemy> &enemies, std::vector<Bullet> &bullets);
     bool checkForRocksCollision(Player player, std::vector<Rock> rocks);
+    bool checkForEnemiesPlayerCollision(Camera camera, std::vector<Enemy> &enemies);
 };
 
 #endif

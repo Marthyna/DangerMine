@@ -27,7 +27,7 @@ public:
 
     Enemy();
 
-    void draw(Camera camera, std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier);
+    void draw(Camera camera, std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 &model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier);
     void setRandomPosition();
     void setControlPoints(Camera camera);
     void goToPlayer(Camera camera);
