@@ -77,8 +77,6 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
         if (g_chosenTool == 0)
         {
             Bullet bullet(this->center_point, this->view_vector);
-            // bullet.setPosition(glm::vec3(this->center_point[0], this->center_point[1], this->center_point[2]));
-            // bullet.draw();
             bullets.push_back(bullet);
         }
     }

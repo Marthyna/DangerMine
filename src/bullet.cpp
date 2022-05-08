@@ -11,10 +11,16 @@ Bullet::Bullet(glm::vec4 center_point, glm::vec4 view_vector)
     this->cam_view_vector = view_vector;
 }
 
-void Bullet::draw(std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier)
+void Bullet::draw(std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier, double tprev)
 {
+    double tnow = glfwGetTime();
+
+    float deltaTime = tnow - tprev;
+    tprev = tnow;
+
     glm::vec4 w = -cam_view_vector / norm(cam_view_vector);
-    position -= 0.1f * w;
+
+    position -= (deltaTime / 100) * w;
 
     model = Matrix_Translate(this->position[0], this->position[1], this->position[2]) * Matrix_Scale(0.025f, 0.025f, 0.2f);
 

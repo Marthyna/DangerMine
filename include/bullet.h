@@ -22,7 +22,7 @@ public:
     glm::vec3 bbox_min;
 
     Bullet(glm::vec4 center_point, glm::vec4 view_vector);
-    void draw(std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier);
+    void draw(std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier, double tprev);
     void setPosition(glm::vec3 position);
     glm::vec3 getSize();
     glm::vec3 getCenter();

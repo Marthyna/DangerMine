@@ -207,6 +207,7 @@ int main()
                                                          {0.0f, -1.0f, 10.0f},
                                                          {0.0f, -1.0f, 10.0f},
                                                          {0.0f, -1.0f, -10.0f}}};
+    double tprev = glfwGetTime();
 
     std::vector<Rock> rocks;
 
@@ -314,7 +315,7 @@ int main()
         // Desenhamos o tiro
         for (int i = 0; i < bullets.size(); i++)
         {
-            bullets[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, BULLET);
+            bullets[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, BULLET, tprev);
         }
 
         camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullets, g_chosenTool);
