@@ -253,9 +253,6 @@ int main()
 
         bool isCollidingWithRock = collision.checkForRocksCollision(player, rocks);
 
-        // if (isCollidingWithRock)
-        //     return 0;
-
         collision.checkForBulletScenaryCollision(bullets, plane_positions);
         camera.update();
 
@@ -315,27 +312,20 @@ int main()
 
         // Desenhamos as rochas
         for (int i = 0; i < rocks.size(); i++)
-            // if (!isCollidingWithRock)
             rocks[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ROCK);
 
         // Desenhamos os inimigos
         for (int i = 0; i < enemies.size(); i++)
             enemies[i].draw(camera, g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ENEMY);
 
-        // collision.checkForEnemiesCollision(enemies);
-
         // Desenhamos o tiro
         for (int i = 0; i < bullets.size(); i++)
-        {
             bullets[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, BULLET, tprev);
-        }
 
         camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isCollidingWithGround, isCollidingWithRock, bullets, g_chosenTool);
 
         bool addPoint = collision.checkForBulletEnemyCollision(enemies, bullets);
-
-        if (addPoint)
-            g_points++;
+        if (addPoint) g_points++;
 
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);
@@ -343,7 +333,6 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
     glfwTerminate();
     return 0;
 }
@@ -473,8 +462,7 @@ void PopMatrix(glm::mat4 &M)
 
 void ComputeNormals(ObjModel *model)
 {
-    if (!model->attrib.normals.empty())
-        return;
+    if (!model->attrib.normals.empty()) return;
 
     size_t num_vertices = model->attrib.vertices.size() / 3;
 

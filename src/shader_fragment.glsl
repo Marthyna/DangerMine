@@ -1,24 +1,15 @@
 #version 330 core
 
-// Atributos de fragmentos recebidos como entrada ("in") pelo Fragment Shader.
-// Neste exemplo, este atributo foi gerado pelo rasterizador como a
-// interpolação da posição global e a normal de cada vértice, definidas em
-// "shader_vertex.glsl" e "main.cpp".
 in vec4 position_world;
 in vec4 normal;
-
-// Posição do vértice atual no sistema de coordenadas local do modelo.
 in vec4 position_model;
-
-// Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
 in vec2 texcoords;
+in vec3 gouraud_color;
 
-// Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-// Identificador que define qual objeto está sendo desenhado no momento
 #define GUN 0
 #define AIM 1
 #define PLANE 2
@@ -30,21 +21,17 @@ uniform mat4 projection;
 #define ENEMY 8
 uniform int object_id;
 
-// Parâmetros da axis-aligned bounding box (AABB) do modelo
 uniform vec4 bbox_min;
 uniform vec4 bbox_max;
 
-// Variáveis para acesso das imagens de textura
 uniform sampler2D sand;
 uniform sampler2D metal;
 uniform sampler2D landscape;
 uniform sampler2D sky;
 uniform sampler2D rock;
 
-// O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
 
-// Constantes
 #define M_PI   3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
 
@@ -86,7 +73,6 @@ void main()
     if (object_id == AIM)
     {
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-
         float raio = 1.0f;
 
         vec4 p = bbox_center + raio * normalize(position_model - bbox_center);
@@ -106,7 +92,6 @@ void main()
     if (object_id == BULLET)
     {
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-
         float raio = 1.0f;
 
         vec4 p = bbox_center + raio * normalize(position_model - bbox_center);
@@ -124,25 +109,8 @@ void main()
         color = pow(color, vec3(1.0,1.0,1.0)/2.2);
     } 
     else if ( object_id == GUN || object_id == PICKAXE)
-    {
-        Kd = vec3(0.2, 0.2, 0.2);
-        Ks = vec3(0.8,0.8,0.8);
-        Ka = vec3(0.0,0.0,0.0);
-        q = 42.0;
-       
-        vec3 I = vec3(0.0, 0.0, 0.0);
+        color = gouraud_color;
 
-        if (dot(normalize(p - l), normalize(l_dir)) < 0.86602) {
-            I = vec3(1.0,1.0,1.0);
-        }
-
-        vec3 Ia = vec3(0.2, 0.2, 0.2);
-        vec3 lambert_diffuse_term = Kd*I*max(0, dot(n,l));
-        vec3 ambient_term = Ka*Ia;
-        vec3 phong_specular_term  = Ks*I*pow(max(0, dot(r,v)), q); 
-        color = lambert_diffuse_term + ambient_term + phong_specular_term;
-        color = pow(color, vec3(1.0,1.0,1.0)/2.2);
-    }
     else if ( object_id == PLANE )
     {
         U = texcoords.x;
@@ -215,7 +183,7 @@ void main()
         vec3 ambient_term = Ka*Ia;
         vec3 phong_specular_term  = Ks*I*pow(max(0, dot(r,v)), q); 
         color = lambert_diffuse_term + ambient_term + phong_specular_term;
-        color = pow(color, vec3(1.0,1.0,1.0)/2.2);
+        color = pow(color, vec3(1.0,1.0,1.0)/2.2);         
     }
 }
 
