@@ -852,7 +852,7 @@ void TextRendering_ShowGameEnd(GLFWwindow *window)
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
 
-    TextRendering_PrintString(window, buffer, 1.0f * charwidth, 1.0f - lineheight, 1.0f);
+    TextRendering_PrintString(window, buffer, 1.0f - (numchars + 1) * charwidth, 1.0f - lineheight, 1.0f);
 }
 
 void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives)
