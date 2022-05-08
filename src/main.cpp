@@ -9,6 +9,7 @@
 #define ENEMY 8
 
 #define NUM_OF_ROCKS 12
+#define NUM_OF_ENEMIES 3
 
 #define GUN_ANGLE_Z -0.2f
 #define GUN_ANGLE_Y -1.3f
@@ -46,13 +47,11 @@
 #include "collision.h"
 #include "bullet.h"
 #include "sceneobject.h"
+#include "bezier.h"
+#include "helpers.h"
+#include "enemy.h"
+#include "rock.h"
 
-struct rock
-{
-    std::array<float, 3> position;
-    float size;
-    float rotateY;
-};
 struct ObjModel
 {
     tinyobj::attrib_t attrib;
@@ -64,8 +63,10 @@ struct ObjModel
         std::string err;
         bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename, basepath, triangulate);
 
-        if (!err.empty()) fprintf(stderr, "\n%s\n", err.c_str());
-        if (!ret) throw std::runtime_error("Erro ao carregar modelo.");
+        if (!err.empty())
+            fprintf(stderr, "\n%s\n", err.c_str());
+        if (!ret)
+            throw std::runtime_error("Erro ao carregar modelo.");
     }
 };
 
@@ -75,8 +76,6 @@ void PopMatrix(glm::mat4 &M);
 void DrawVirtualObject(const char *object_name);
 void DrawLandscape(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
 void DrawLandscapes(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
-void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform);
-void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform, std::array<rock, NUM_OF_ROCKS> rocks);
 void BuildTrianglesAndAddToVirtualScene(ObjModel *);
 void ComputeNormals(ObjModel *model);
 void BuildObject(const char *path);
@@ -136,14 +135,6 @@ GLint bbox_max_uniform;
 int g_lives = 3;
 int g_points = 0;
 int g_chosenTool = 0; // 0 = gun, 1 = pickaxe (standart is gun)
-
-float RandomFloat(float a, float b)
-{
-    float random = ((float)rand()) / (float)RAND_MAX;
-    float diff = b - a;
-    float r = random * diff;
-    return a + r;
-}
 
 int main()
 {
@@ -217,13 +208,20 @@ int main()
                                                          {0.0f, -1.0f, 10.0f},
                                                          {0.0f, -1.0f, -10.0f}}};
 
-    std::array<rock, NUM_OF_ROCKS> rocks;
+    std::vector<Rock> rocks;
 
-    for (int i = 0; i < rocks.size(); i++)
+    std::vector<Enemy> enemies;
+
+    for (int i = 0; i < NUM_OF_ENEMIES; i++)
     {
-        rocks[i].position = {RandomFloat(-8, 8), -1, RandomFloat(-8, 8)};
-        rocks[i].size = RandomFloat(0.02, 0.035);
-        rocks[i].rotateY = RandomFloat(-2, 0.75);
+        enemies.push_back(Enemy());
+        enemies[i].setRandomPosition();
+        enemies[i].setControlPoints(camera);
+    }
+
+    for (int i = 0; i < NUM_OF_ROCKS; i++)
+    {
+        rocks.push_back(Rock());
     }
 
     while (!glfwWindowShouldClose(window))
@@ -252,7 +250,7 @@ int main()
 
         bool isColliding = collision.checkForGroundCollision(camera, glm::vec3(plane_positions[0][0], plane_positions[0][1], plane_positions[0][2]));
 
-        collision.checkForBulletsCollision(bullets, plane_positions);
+        collision.checkForBulletScenaryCollision(bullets, plane_positions);
 
         camera.update();
 
@@ -300,21 +298,31 @@ int main()
         DrawLandscapes(model, model_uniform, object_id_uniform);
 
         // Desenhamos as rochas
-        DrawRocks(model, model_uniform, object_id_uniform, rocks);
+        for (int i = 0; i < rocks.size(); i++)
+        {
+            rocks[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ROCK);
+        }
 
         // Desenhamos os inimigos
-        model = Matrix_Translate(0.0f, 0.0f, -2.0f) * Matrix_Scale(0.0025f, 0.0025f, 0.0025f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, ENEMY);
-        DrawVirtualObject("enemy");
+        for (int i = 0; i < enemies.size(); i++)
+        {
+            enemies[i].draw(camera, g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ENEMY);
+        }
+
+        // collision.checkForEnemiesCollision(enemies);
 
         // Desenhamos o tiro
         for (int i = 0; i < bullets.size(); i++)
         {
-            bullets[i].initialize(model_uniform, object_id_uniform, BULLET, g_VirtualScene, bbox_max_uniform, bbox_min_uniform);
-            bullets[i].draw();
+            bullets[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, BULLET);
         }
+
         camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullets, g_chosenTool);
+
+        bool addPoint = collision.checkForBulletEnemyCollision(enemies, bullets);
+
+        if (addPoint)
+            g_points++;
 
         TextRendering_Init();
         TextRendering_ShowLivesCouting(window, g_lives);
@@ -347,22 +355,6 @@ void DrawLandscape(glm::mat4 model, GLint model_uniform, GLint object_id_uniform
     glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     glUniform1i(object_id_uniform, LANDSCAPE);
     DrawVirtualObject("landscape");
-}
-
-void DrawRocks(glm::mat4 model, GLint model_uniform, GLint object_id_uniform, std::array<rock, NUM_OF_ROCKS> rocks)
-{
-    for (int i = 0; i < rocks.size(); i++)
-    {
-        model = Matrix_Rotate_Y(rocks[i].rotateY) * Matrix_Translate(rocks[i].position[0], rocks[i].position[1], rocks[i].position[2]) * Matrix_Scale(rocks[i].size, rocks[i].size, rocks[i].size);
-        DrawRock(model, model_uniform, object_id_uniform);
-    }
-}
-
-void DrawRock(glm::mat4 model, GLint model_uniform, GLint object_id_uniform)
-{
-    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-    glUniform1i(object_id_uniform, ROCK);
-    DrawVirtualObject("rock");
 }
 
 void LoadTextureImage(const char *filename)
@@ -409,6 +401,7 @@ void DrawVirtualObject(const char *object_name)
 
     glm::vec3 bbox_min = g_VirtualScene[object_name].bbox_min;
     glm::vec3 bbox_max = g_VirtualScene[object_name].bbox_max;
+
     glUniform4f(bbox_min_uniform, bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
     glUniform4f(bbox_max_uniform, bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
 

@@ -12,28 +12,27 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <GLFW/glfw3.h>
 #include "sceneobject.h"
-
+#include "camera.h"
+#include "bezier.h"
 class Enemy
 {
 public:
     glm::vec3 position;
-    GLint model_uniform;
-    GLint object_id_uniform;
-    int identifier;
-    std::map<std::string, SceneObject> g_VirtualScene;
-    GLint bbox_max_uniform;
-    GLint bbox_min_uniform;
-    Enemy(glm::vec4 center_point);
-    
-    void initialize(
-        GLint model_uniform, 
-        GLint object_id_uniform, 
-        int identifier, 
-        std::map<std::string, SceneObject> g_VirtualScene, 
-        GLint bbox_max_uniform, 
-        GLint bbox_min_uniform);
-    void draw();
-    void setPosition(glm::vec3 position);
+    glm::vec3 p1;
+    glm::vec3 p2;
+    glm::vec3 p3;
+    glm::vec3 bbox_max;
+    glm::vec3 bbox_min;
+    float t;
+
+    Enemy();
+
+    void draw(Camera camera, std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier);
+    void setRandomPosition();
+    void setControlPoints(Camera camera);
+    void goToPlayer(Camera camera);
+    glm::vec3 getSize();
+    glm::vec3 getCenter();
 };
 
 #endif

@@ -1,6 +1,7 @@
-#ifndef _BULLET_CLASS_H
-#define _BULLET_CLASS_H
+#ifndef _ROCK_CLASS_H
+#define _ROCK_CLASS_H
 
+#include "helpers.h"
 #include "matrices.h"
 #include <cstdio>
 #include <cstdlib>
@@ -13,19 +14,17 @@
 #include <GLFW/glfw3.h>
 #include "sceneobject.h"
 
-class Bullet
+class Rock
 {
 public:
-    glm::vec4 position;
-    glm::vec4 cam_view_vector;
+    glm::vec3 position;
     glm::vec3 bbox_max;
     glm::vec3 bbox_min;
+    float size;
+    float rotateY;
 
-    Bullet(glm::vec4 center_point, glm::vec4 view_vector);
+    Rock();
     void draw(std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier);
-    void setPosition(glm::vec3 position);
-    glm::vec3 getSize();
-    glm::vec3 getCenter();
 };
 
 #endif

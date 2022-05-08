@@ -1,7 +1,4 @@
 #include "collision.h"
-#ifdef __APPLE__
-    #include <array>
-#endif
 
 Collision::Collision() {}
 
@@ -13,9 +10,9 @@ bool Collision::checkForGroundCollision(Camera camera, glm::vec3 ground_pos)
     }
 
     return false;
-}
+};
 
-void Collision::checkForBulletsCollision(std::vector<Bullet> &bullets, std::array<std::array<float, 3>, 6> plane_positions)
+void Collision::checkForBulletScenaryCollision(std::vector<Bullet> &bullets, std::array<std::array<float, 3>, 6> plane_positions)
 {
     if (bullets.size() == 0)
     {
@@ -37,5 +34,57 @@ void Collision::checkForBulletsCollision(std::vector<Bullet> &bullets, std::arra
                 }
             }
         }
+    }
+};
+
+void Collision::checkForEnemiesCollision(std::vector<Enemy> enemies)
+{
+    for (int i = 0; i < enemies.size(); i++)
+    {
+        for (int j = 1; j < enemies.size(); j++)
+        {
+            if (enemies[i].getCenter()[0] - enemies[j].getCenter()[0] < enemies[i].getSize()[0] / 2 + enemies[j].getSize()[0] / 2)
+            {
+                if (enemies[i].getCenter()[1] - enemies[j].getCenter()[1] < enemies[i].getSize()[1] / 2 + enemies[j].getSize()[1] / 2)
+                {
+                    if (enemies[i].getCenter()[2] - enemies[j].getCenter()[2] < enemies[i].getSize()[2] / 2 + enemies[j].getSize()[2] / 2)
+                    {
+                        fprintf(stderr, "%d %d colidem \n", i, j);
+                    }
+                }
+            }
+        }
+    }
+};
+
+bool Collision::checkForBulletEnemyCollision(std::vector<Enemy> &enemies, std::vector<Bullet> &bullets)
+{
+    for (int i = 0; i < bullets.size(); i++)
+    {
+        for (int j = 0; j < enemies.size(); j++)
+        {
+            if ((bullets[i].position.x >= enemies[j].bbox_min.x && bullets[i].position.x <= enemies[j].bbox_max.x) &&
+                (bullets[i].position.y >= enemies[j].bbox_min.y && bullets[i].position.y <= enemies[j].bbox_max.y) &&
+                (bullets[i].position.z >= enemies[j].bbox_min.z && bullets[i].position.z <= enemies[j].bbox_max.z))
+            {
+                if (!enemies.empty() && !bullets.empty())
+                {
+                    enemies.erase(enemies.begin() + j);
+                    bullets.erase(bullets.begin() + i);
+
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool Collision::checkForRocksCollision(Camera camera, std::vector<Rock> rocks)
+{
+    for (int i = 0; i < rocks.size(); i++)
+    {
+        // if ()
     }
 }
