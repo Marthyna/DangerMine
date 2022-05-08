@@ -11,9 +11,6 @@
 #define NUM_OF_ROCKS 12
 #define NUM_OF_ENEMIES 3
 
-#define GUN_ANGLE_Z -0.2f
-#define GUN_ANGLE_Y -1.3f
-#define GUN_ANGLE_X 0.39
 #define PICKAXE_ANGLE_X 2.356194
 #define PICKAXE_ANGLE_Y 6.086837
 #define PICKAXE_ANGLE_Z -1.178097
@@ -51,6 +48,7 @@
 #include "helpers.h"
 #include "enemy.h"
 #include "rock.h"
+#include "player.h"
 
 struct ObjModel
 {
@@ -209,8 +207,8 @@ int main()
     double tprev = glfwGetTime();
 
     std::vector<Rock> rocks;
-
     std::vector<Enemy> enemies;
+    Player player;
 
     for (int i = 0; i < NUM_OF_ENEMIES; i++)
     {
@@ -220,9 +218,7 @@ int main()
     }
 
     for (int i = 0; i < NUM_OF_ROCKS; i++)
-    {
         rocks.push_back(Rock());
-    }
 
     while (!glfwWindowShouldClose(window))
     {
@@ -248,28 +244,31 @@ int main()
             projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
         }
 
-        bool isColliding = collision.checkForGroundCollision(camera, glm::vec3(plane_positions[0][0], plane_positions[0][1], plane_positions[0][2]));
+        bool isCollidingWithGround = collision.checkForGroundCollision(
+            camera, 
+            glm::vec3(plane_positions[0][0], 
+                      plane_positions[0][1], 
+                      plane_positions[0][2]));
 
+        bool isCollidingWithRock = collision.checkForRocksCollision(player, rocks);
+        if (isCollidingWithRock) return 0;
         collision.checkForBulletScenaryCollision(bullets, plane_positions);
-
         camera.update();
 
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
         glm::mat4 inverse = invert(camera.view);
 
-        if (g_chosenTool == 0)
-        {
-            // Desenhamos a arma
-            model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(GUN_ANGLE_X) * Matrix_Rotate_Y(GUN_ANGLE_Y) * Matrix_Rotate_X(GUN_ANGLE_Z);
-            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-            glUniform1i(object_id_uniform, GUN);
-            DrawVirtualObject("gun");
-        }
+        if (g_chosenTool == 0) // Desenhamos o player com a arma
+            player.draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, GUN, inverse);
         else if (g_chosenTool == 1)
         {
             // Desenhamos a picareta
-            model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) * Matrix_Scale(0.08f, 0.08f, 0.08f) * Matrix_Rotate_Z(PICKAXE_ANGLE_Z) * Matrix_Rotate_Y(PICKAXE_ANGLE_Y) * Matrix_Rotate_X(PICKAXE_ANGLE_X);
+            model = inverse * Matrix_Translate(0.45f, -0.5f, -0.8f) 
+                * Matrix_Scale(0.08f, 0.08f, 0.08f) 
+                * Matrix_Rotate_Z(PICKAXE_ANGLE_Z) 
+                * Matrix_Rotate_Y(PICKAXE_ANGLE_Y) 
+                * Matrix_Rotate_X(PICKAXE_ANGLE_X);
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             glUniform1i(object_id_uniform, PICKAXE);
             DrawVirtualObject("pickaxe");
@@ -299,15 +298,12 @@ int main()
 
         // Desenhamos as rochas
         for (int i = 0; i < rocks.size(); i++)
-        {
-            rocks[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ROCK);
-        }
+            if (!isCollidingWithRock)
+                rocks[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ROCK);
 
         // Desenhamos os inimigos
         for (int i = 0; i < enemies.size(); i++)
-        {
             enemies[i].draw(camera, g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, ENEMY);
-        }
 
         // collision.checkForEnemiesCollision(enemies);
 
@@ -317,7 +313,7 @@ int main()
             bullets[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, BULLET, tprev);
         }
 
-        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isColliding, bullets, g_chosenTool);
+        camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isCollidingWithGround, isCollidingWithRock, bullets, g_chosenTool);
 
         bool addPoint = collision.checkForBulletEnemyCollision(enemies, bullets);
 

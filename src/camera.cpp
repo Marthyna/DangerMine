@@ -23,33 +23,34 @@ Camera::Camera(GLuint program_id)
 void Camera::update()
 {
     view = Matrix_Camera_View(center_point, view_vector, up_vector);
-
     glUniformMatrix4fv(glGetUniformLocation(program_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
 };
 
-void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mouseYPos, double *mouseXOffset, double *mouseYOffset, bool isColliding, std::vector<Bullet> &bullets, int g_chosenTool)
+void Camera::listenForInputs(
+    GLFWwindow *window, 
+    double *mouseXPos, 
+    double *mouseYPos, 
+    double *mouseXOffset, 
+    double *mouseYOffset, 
+    bool isCollidingWithGround,
+    bool isCollidingWithRock, 
+    std::vector<Bullet> &bullets, 
+    int g_chosenTool)
 {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        glm::vec4 w;
-        if (isColliding)
-        {
-            glm::vec4 front = glm::vec4(view_vector[0], 0.0f, view_vector[2], 0.0f);
-
-            w = -front / norm(front);
-
+        if (!isCollidingWithRock) 
+        {  
+            glm::vec4 w;
+            if (isCollidingWithGround)
+            {
+                glm::vec4 front = glm::vec4(view_vector[0], 0.0f, view_vector[2], 0.0f);
+                w = -front / norm(front);
+                center_point -= 0.01f * w;
+            }
+            else w = -view_vector / norm(view_vector);
             center_point -= 0.01f * w;
         }
-        else
-        {
-            w = -view_vector / norm(view_vector);
-        }
-        center_point -= 0.01f * w;
-    }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        glm::vec4 w = -view_vector / norm(view_vector);
-        center_point -= 0.01f * w;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -81,18 +82,13 @@ void Camera::listenForInputs(GLFWwindow *window, double *mouseXPos, double *mous
         }
     }
     oldState = newState;
-
     double mouseX, mouseY;
-
     glfwGetCursorPos(window, &mouseX, &mouseY);
 
     float dx = *mouseXPos - mouseX;
     float dy = *mouseYPos - mouseY;
 
-    if (dx == 0 && dy == 0)
-    {
-        return;
-    }
+    if (dx == 0 && dy == 0) return;
 
     g_CameraTheta += 0.01f * dx;
     g_CameraPhi += 0.01f * dy;

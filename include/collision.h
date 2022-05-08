@@ -3,6 +3,7 @@
 
 #include "matrices.h"
 #include "camera.h"
+#include "player.h"
 #include <cstdio>
 #include <vector>
 #include <cstdlib>
@@ -27,7 +28,7 @@ public:
     void checkForBulletScenaryCollision(std::vector<Bullet> &bullets, std::array<std::array<float, 3>, 6> plane_positions);
     void checkForEnemiesCollision(std::vector<Enemy> enemies);
     bool checkForBulletEnemyCollision(std::vector<Enemy> &enemies, std::vector<Bullet> &bullets);
-    bool checkForRocksCollision(Camera camera, std::vector<Rock> rocks);
+    bool checkForRocksCollision(Player player, std::vector<Rock> rocks);
 };
 
 #endif
