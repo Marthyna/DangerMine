@@ -13,6 +13,7 @@ Camera::Camera(GLuint program_id)
     g_CameraTheta = 0.f;
     g_CameraPhi = 0.f;
     g_CameraDistance = 10.0f;
+    velocity = 0.025f;
 
     lookat_point = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     center_point = glm::vec4(0.0f, 0.0f, 2.5f, 1.0f);
@@ -27,48 +28,46 @@ void Camera::update()
 };
 
 void Camera::listenForInputs(
-    GLFWwindow *window, 
-    double *mouseXPos, 
-    double *mouseYPos, 
-    double *mouseXOffset, 
-    double *mouseYOffset, 
+    GLFWwindow *window,
+    double *mouseXPos,
+    double *mouseYPos,
+    double *mouseXOffset,
+    double *mouseYOffset,
     bool isCollidingWithGround,
-    bool isCollidingWithRock, 
-    std::vector<Bullet> &bullets, 
+    bool isCollidingWithRock,
+    std::vector<Bullet> &bullets,
     int g_chosenTool)
 {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        if (!isCollidingWithRock) 
-        {  
-            glm::vec4 w;
-            if (isCollidingWithGround)
-            {
-                glm::vec4 front = glm::vec4(view_vector[0], 0.0f, view_vector[2], 0.0f);
-                w = -front / norm(front);
-                center_point -= 0.01f * w;
-            }
-            else w = -view_vector / norm(view_vector);
-            center_point -= 0.01f * w;
+        glm::vec4 w;
+        if (isCollidingWithGround)
+        {
+            glm::vec4 front = glm::vec4(view_vector[0], 0.0f, view_vector[2], 0.0f);
+            w = -front / norm(front);
+            center_point -= this->velocity * w;
         }
+        else
+            w = -view_vector / norm(view_vector);
+        center_point -= this->velocity * w;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
         glm::vec4 w = -view_vector / norm(view_vector);
-        center_point += 0.01f * w;
+        center_point += this->velocity * w;
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
         glm::vec4 w = -view_vector / norm(view_vector);
-        center_point += 0.01f * (crossproduct(up_vector, w));
+        center_point += this->velocity * (crossproduct(up_vector, w));
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     {
         glm::vec4 w = -view_vector / norm(view_vector);
-        center_point -= 0.01f * (crossproduct(up_vector, w));
+        center_point -= this->velocity * (crossproduct(up_vector, w));
     }
     static int oldState = GLFW_RELEASE;
     int newState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
@@ -88,7 +87,8 @@ void Camera::listenForInputs(
     float dx = *mouseXPos - mouseX;
     float dy = *mouseYPos - mouseY;
 
-    if (dx == 0 && dy == 0) return;
+    if (dx == 0 && dy == 0)
+        return;
 
     g_CameraTheta += 0.01f * dx;
     g_CameraPhi += 0.01f * dy;

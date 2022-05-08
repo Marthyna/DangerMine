@@ -2,13 +2,19 @@
 
 Rock::Rock()
 {
-    this->position = {RandomFloat(-8, 8), -1, RandomFloat(-8, 8)};
+    float x = RandomFloat(-8.0f, 8.0f);
+    float y = -1.0f;
+    float z = RandomFloat(-10.0f, 10.0f);
+
+    while (z > -1.0f && z < 1.0f)
+    {
+        fprintf(stderr, "%f \n", z);
+        z = RandomFloat(-10.0f, 10.0f);
+    }
+
+    this->position = {x, y, z};
     this->size = RandomFloat(0.02, 0.035);
     this->rotateY = RandomFloat(-2, 0.75);
-
-    fprintf(stdout, "Position: %f %f %f", &this->position[0], &this->position[1], &this->position[2]);
-    fprintf(stdout, "\nSize: %f", &this->size);
-    fprintf(stdout, "\nRotation: %f\n\n", &this->rotateY);
 }
 
 void Rock::draw(std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 model, GLint &bbox_max_uniform, GLint &bbox_min_uniform, GLint &object_id_uniform, GLint &model_uniform, int identifier)

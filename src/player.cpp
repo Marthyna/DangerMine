@@ -10,21 +10,18 @@ Player::Player()
 }
 
 void Player::draw(
-    std::map<std::string, SceneObject> &g_VirtualScene, 
-    glm::mat4 model, 
-    GLint &bbox_max_uniform, 
-    GLint &bbox_min_uniform, 
-    GLint &object_id_uniform, 
-    GLint &model_uniform, 
+    std::map<std::string, SceneObject> &g_VirtualScene,
+    glm::mat4 &model,
+    GLint &bbox_max_uniform,
+    GLint &bbox_min_uniform,
+    GLint &object_id_uniform,
+    GLint &model_uniform,
     int identifier,
-    glm::mat4 inverse)
+    glm::mat4 inverse,
+    Camera camera)
 {
-    model = inverse * Matrix_Translate(this->position[0], this->position[1], this->position[2]) 
-        * Matrix_Scale(this->size, this->size, this->size) 
-        * Matrix_Rotate_Z(this->rotateX) 
-        * Matrix_Rotate_Y(this->rotateY) 
-        * Matrix_Rotate_X(this->rotateZ);
-            
+    model = inverse * Matrix_Translate(this->position[0], this->position[1], this->position[2]) * Matrix_Scale(this->size, this->size, this->size) * Matrix_Rotate_Z(this->rotateX) * Matrix_Rotate_Y(this->rotateY) * Matrix_Rotate_X(this->rotateZ);
+
     glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     glUniform1i(object_id_uniform, identifier);
 

@@ -28,6 +28,8 @@ public:
     float g_CameraTheta;
     float g_CameraPhi;
 
+    float velocity;
+
     glm::vec4 center_point;
     glm::vec4 lookat_point;
     glm::vec4 view_vector;
@@ -36,14 +38,14 @@ public:
 
     Camera(GLuint program_id);
     void update();
-    void listenForInputs(GLFWwindow *window, 
-                         double *mouseXPos, 
-                         double *mouseYPos, 
-                         double *mouseXOffset, 
-                         double *mouseYOffset, 
+    void listenForInputs(GLFWwindow *window,
+                         double *mouseXPos,
+                         double *mouseYPos,
+                         double *mouseXOffset,
+                         double *mouseYOffset,
                          bool isCollidingWithGround,
-                         bool isCollidingWithRock, 
-                         std::vector<Bullet> &bullets, 
+                         bool isCollidingWithRock,
+                         std::vector<Bullet> &bullets,
                          int g_chosenTool);
 };
 
