@@ -1,4 +1,7 @@
 #include "collision.h"
+#ifdef __APPLE__
+    #include <array>
+#endif
 
 Collision::Collision() {}
 
@@ -87,4 +90,5 @@ bool Collision::checkForRocksCollision(Camera camera, std::vector<Rock> rocks)
     {
         // if ()
     }
+    return false;
 }
