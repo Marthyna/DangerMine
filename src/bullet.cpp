@@ -22,7 +22,8 @@ void Bullet::draw(std::map<std::string, SceneObject> &g_VirtualScene, glm::mat4 
 
     position -= (deltaTime / 100) * w;
 
-    model = Matrix_Translate(this->position[0], this->position[1], this->position[2]) * Matrix_Scale(0.025f, 0.025f, 0.2f);
+    model = Matrix_Translate(this->position[0], this->position[1], this->position[2]) 
+          * Matrix_Scale(0.025f, 0.025f, 0.2f);
 
     glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     glUniform1i(object_id_uniform, identifier);
