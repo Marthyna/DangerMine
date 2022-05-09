@@ -30,6 +30,8 @@
 #include <array>
 #include <sstream>
 #include <stdexcept>
+#include <chrono>
+#include <thread>
 #include <algorithm>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -41,7 +43,7 @@
 #include "utils.h"
 #include "matrices.h"
 #include "camera.h"
-#include "collision.h"
+#include "collisions.h"
 #include "bullet.h"
 #include "sceneobject.h"
 #include "bezier.h"
@@ -85,14 +87,13 @@ void TextRendering_Init();
 void TextRendering_PrintString(GLFWwindow *window, const std::string &str, float x, float y, float scale = 1.0f);
 void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives);
 void TextRendering_ShowTotalPoints(GLFWwindow *window, int points);
+void ShowGameEnd(GLFWwindow *window);
 void TextRendering_PrintMatrix(GLFWwindow *window, glm::mat4 M, float x, float y, float scale);
 
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
 void ErrorCallback(int error, const char *description);
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow *window, double xpos, double ypos);
-void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 
 float TextRendering_LineHeight(GLFWwindow *window);
 float TextRendering_CharWidth(GLFWwindow *window);
@@ -164,9 +165,7 @@ int main()
     }
 
     glfwSetKeyCallback(window, KeyCallback);
-    glfwSetMouseButtonCallback(window, MouseButtonCallback);
     glfwSetCursorPosCallback(window, CursorPosCallback);
-    glfwSetScrollCallback(window, ScrollCallback);
 
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -276,17 +275,14 @@ int main()
         bool isCollidingWithEnemy = collision.checkForEnemiesPlayerCollision(camera, enemies);
 
         if (isCollidingWithEnemy)
-        {
-            if (g_lives > 0)
-            {
+            if (g_lives > 0) 
                 g_lives--;
-            }
-        }
 
         if (g_lives <= 0)
-        {
             end = true;
-        }
+
+        if (g_points == NUM_OF_ENEMIES)
+            end = true;
 
         // Desenhamos a mira
         model = Matrix_Identity();
@@ -326,12 +322,20 @@ int main()
 
         bool addPoint = collision.checkForBulletEnemyCollision(enemies, bullets);
         if (addPoint) g_points++;
-
-        TextRendering_Init();
-        TextRendering_ShowLivesCouting(window, g_lives);
-        TextRendering_ShowTotalPoints(window, g_points);
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        if (end) 
+        {
+            ShowGameEnd(window);
+            glfwTerminate();
+            return 0;
+        }
+        else
+        {
+            TextRendering_Init();
+            TextRendering_ShowLivesCouting(window, g_lives);
+            TextRendering_ShowTotalPoints(window, g_points);
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+        }
     }
     glfwTerminate();
     return 0;
@@ -743,99 +747,20 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
     return program_id;
 }
 
-void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
-{
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    {
-        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
-        g_LeftMouseButtonPressed = true;
-    }
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-    {
-        g_LeftMouseButtonPressed = false;
-    }
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-    {
-        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
-        g_RightMouseButtonPressed = true;
-    }
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
-    {
-        g_RightMouseButtonPressed = false;
-    }
-    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
-    {
-        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
-        g_MiddleMouseButtonPressed = true;
-    }
-    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
-    {
-        g_MiddleMouseButtonPressed = false;
-    }
-}
-
 void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 {
     mouseXPos = xpos;
     mouseYPos = ypos;
 }
 
-void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
-{
-    mouseYOffset = yoffset;
-}
-
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
 {
-    for (int i = 0; i < 10; ++i)
-        if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
-            std::exit(100 + i);
-
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-
-    float delta = 3.141592 / 16;
-    if (key == GLFW_KEY_X && action == GLFW_PRESS)
-    {
-        g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-    {
-        g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-    if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-    {
-        g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    {
-        g_AngleX = 0.0f;
-        g_AngleY = 0.0f;
-        g_AngleZ = 0.0f;
-    }
-
-    if (key == GLFW_KEY_P && action == GLFW_PRESS)
-    {
-        g_UsePerspectiveProjection = true;
-    }
-
-    if (key == GLFW_KEY_O && action == GLFW_PRESS)
-    {
-        g_UsePerspectiveProjection = false;
-    }
 
     if (key == GLFW_KEY_C && action == GLFW_PRESS)
     {
         g_chosenTool = (g_chosenTool == 0) ? 1 : 0;
-    }
-
-    if (key == GLFW_KEY_R && action == GLFW_PRESS)
-    {
-        LoadShadersFromFiles();
-        fprintf(stdout, "Shaders recarregados!\n");
-        fflush(stdout);
     }
 }
 
@@ -844,15 +769,22 @@ void ErrorCallback(int error, const char *description)
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
-void TextRendering_ShowGameEnd(GLFWwindow *window)
+void ShowGameEnd(GLFWwindow *window)
 {
+    glClearColor(0.7333f, 0.5216f, 0.5216f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     static char buffer[20] = "FIM";
     static int numchars = 3;
 
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
-
+    
+    TextRendering_Init();
     TextRendering_PrintString(window, buffer, 1.0f - (numchars + 1) * charwidth, 1.0f - lineheight, 1.0f);
+    glfwSwapBuffers(window);
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 }
 
 void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives)
