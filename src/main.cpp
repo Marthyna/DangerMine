@@ -106,19 +106,7 @@ std::map<std::string, SceneObject> g_VirtualScene;
 std::stack<glm::mat4> g_MatrixStack;
 
 float g_ScreenRatio = 1.0f;
-
-float g_AngleX = 0.0f;
-float g_AngleY = 0.0f;
-float g_AngleZ = 0.0f;
-
-bool g_LeftMouseButtonPressed = false;
-bool g_RightMouseButtonPressed = false;
-bool g_MiddleMouseButtonPressed = false;
-
 double mouseXPos, mouseYPos, mouseXOffset, mouseYOffset;
-double g_LastCursorPosX, g_LastCursorPosY;
-
-bool g_UsePerspectiveProjection = true;
 
 GLuint vertex_shader_id;
 GLuint fragment_shader_id;
@@ -172,7 +160,6 @@ int main()
 
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
     FramebufferSizeCallback(window, SCREEN_WIDTH, SCREEN_WIDTH);
-
     LoadShadersFromFiles();
 
     // Carregamos imagens para serem utilizadas como textura
@@ -195,9 +182,13 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
 
+    std::vector<Rock> rocks;
+    std::vector<Enemy> enemies;
+    Player player;
     Camera camera(program_id);
     Collision collision;
     std::vector<Bullet> bullets;
+    // Posicoes das paredes
     std::array<std::array<float, 3>, 6> plane_positions{{{0.0f, -1.0f, 0.0f},
                                                          {0.0f, 5.0f, 0.0f},
                                                          {0.0f, -1.0f, -10.0f},
@@ -206,10 +197,7 @@ int main()
                                                          {0.0f, -1.0f, -10.0f}}};
     double tprev = glfwGetTime();
 
-    std::vector<Rock> rocks;
-    std::vector<Enemy> enemies;
-    Player player;
-
+    // Inicializa vetor inimigos
     for (int i = 0; i < NUM_OF_ENEMIES; i++)
     {
         enemies.push_back(Enemy());
@@ -217,6 +205,7 @@ int main()
         enemies[i].setControlPoints(camera);
     }
 
+    // Inicializa vetor de rochas
     for (int i = 0; i < NUM_OF_ROCKS; i++)
         rocks.push_back(Rock());
 
@@ -227,43 +216,33 @@ int main()
         glUseProgram(program_id);
 
         glm::mat4 projection;
-
         float nearplane = -0.1f;
         float farplane = -20.0f;
-        if (g_UsePerspectiveProjection)
-        {
-            float field_of_view = 3.141592 / 3.0f;
-            projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-        }
-        else
-        {
-            float t = 3.0f * camera.g_CameraDistance / 1.25f;
-            float b = -t;
-            float r = t * g_ScreenRatio;
-            float l = -r;
-            projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-        }
+        float field_of_view = 3.141592 / 3.0f;
+        projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
 
+        // Checa se o player colide com o chao
         bool isCollidingWithGround = collision.checkForGroundCollision(
             camera,
             glm::vec3(plane_positions[0][0],
                       plane_positions[0][1],
                       plane_positions[0][2]));
 
+        // Checa se o player colide com rochas
         bool isCollidingWithRock = collision.checkForRocksCollision(player, rocks);
 
+        // Checa se a bala colide com o cenario
         collision.checkForBulletScenaryCollision(bullets, plane_positions);
-        camera.update();
 
+        // Atualiza a camera
+        camera.update();
         glm::mat4 model = Matrix_Identity();
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
         glm::mat4 inverse = invert(camera.view);
 
         // Desenhamos o player com a arma
         if (g_chosenTool == 0)
-        {
             player.draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, GUN, inverse, camera);
-        }
         else if (g_chosenTool == 1)
         {
             // Desenhamos a picareta
@@ -272,16 +251,18 @@ int main()
             glUniform1i(object_id_uniform, PICKAXE);
             DrawVirtualObject("pickaxe");
         }
-        bool isCollidingWithEnemy = collision.checkForEnemiesPlayerCollision(camera, enemies);
+        // Checa se o player esta colidindo com inimigo ou se a bala esta colidindo com inimigo
+        bool isCollidingWithEnemy = collision.checkForEnemiesPlayerCollision(camera, enemies);        
+        bool addPoint = collision.checkForBulletEnemyCollision(enemies, bullets);
+        if (addPoint) g_points++;
 
+        // Desconta vidas a cada colisao com inimigo
         if (isCollidingWithEnemy)
             if (g_lives > 0) 
                 g_lives--;
 
-        if (g_lives <= 0)
-            end = true;
-
-        if (g_points == NUM_OF_ENEMIES)
+        // Controle de finalizacao de jogo
+        if ((g_lives <= 0) || (g_points == NUM_OF_ENEMIES))
             end = true;
 
         // Desenhamos a mira
@@ -318,10 +299,10 @@ int main()
         for (int i = 0; i < bullets.size(); i++)
             bullets[i].draw(g_VirtualScene, model, bbox_max_uniform, bbox_min_uniform, object_id_uniform, model_uniform, BULLET, tprev);
 
+        // Fica monitorando a atividade do mouse e teclado pra atualizar a camera
         camera.listenForInputs(window, &mouseXPos, &mouseYPos, &mouseXOffset, &mouseYOffset, isCollidingWithGround, isCollidingWithRock, bullets, g_chosenTool);
 
-        bool addPoint = collision.checkForBulletEnemyCollision(enemies, bullets);
-        if (addPoint) g_points++;
+        // Se acabou o jogo, mostra tela de fim, senao continua no jogo
         if (end) 
         {
             ShowGameEnd(window);
@@ -758,10 +739,9 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
+    // Se o player aperta C no teclado, troca para a picareta
     if (key == GLFW_KEY_C && action == GLFW_PRESS)
-    {
         g_chosenTool = (g_chosenTool == 0) ? 1 : 0;
-    }
 }
 
 void ErrorCallback(int error, const char *description)
@@ -769,6 +749,7 @@ void ErrorCallback(int error, const char *description)
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
+// Muda pra tela de fim
 void ShowGameEnd(GLFWwindow *window)
 {
     glClearColor(0.7333f, 0.5216f, 0.5216f, 1.0f);
@@ -787,6 +768,7 @@ void ShowGameEnd(GLFWwindow *window)
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 }
 
+// Mostra vidas na tela
 void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives)
 {
     static char buffer[20] = "? lives";
@@ -800,6 +782,7 @@ void TextRendering_ShowLivesCouting(GLFWwindow *window, int lives)
     TextRendering_PrintString(window, buffer, 1.0f - (numchars + 1) * charwidth, 1.0f - lineheight, 1.0f);
 }
 
+// Mostra total de pontos
 void TextRendering_ShowTotalPoints(GLFWwindow *window, int points)
 {
     static char buffer[50] = "Total points: ?";
